@@ -36,7 +36,7 @@ STYLE.push(`
 .titlebox .clr{position:absolute;right:11px;top:50%;margin-top:-13px;z-index:1}
 .titlebox input:focus{border-color:var(--fg)}
 .pub{display:grid;grid-template-columns:minmax(0,1fr) 300px;gap:28px;align-items:start}
-@media (max-width:820px){.pub{grid-template-columns:1fr}}
+@media (max-width:820px){.pub{grid-template-columns:minmax(0,1fr)}}
 .set{padding:16px 0;border-top:1px solid var(--line)}
 .set:first-child{border-top:0;padding-top:0}
 .set>.label{display:flex;align-items:center;gap:8px;margin-bottom:10px}
@@ -246,13 +246,30 @@ async function mountWizard(host, { kind, editId, app }) {
           back.scrollLeft = input.scrollLeft;
           if (ui.root.activeElement === input) tip.show(edit.getBoundingClientRect(), act.label); else tip.hide();
         } else { segment(v); back.scrollLeft = input.scrollLeft; tip.hide(); }
+        schedBar();
       };
       const nextSlot = (from) => [...input.value.matchAll(SLOT_RE)].find((m) => m.index >= from);
       function enter(m) {
         input.focus();
         input.setSelectionRange(m.index, m.index + m[0].length);
-        act = { start: m.index, tail: input.value.length - (m.index + m[0].length), label: m[1] };
+        // p：这一格还是原样的占位符，第一次输入整格替换（见 fixPending），不管光标落在格子里哪儿
+        act = { start: m.index, tail: input.value.length - (m.index + m[0].length), label: m[1], p: true };
         paint();
+        // 触屏：点按之后系统还会再摆一次光标，把整格选中盖掉；稍后补选一次（补不上有 fixPending 兜底）
+        if (matchMedia('(hover:none)').matches) {
+          const mine = act;
+          setTimeout(() => { if (act === mine && act.p && ui.root.activeElement === input) { const [s0, e0] = region(); if (input.selectionStart !== s0 || input.selectionEnd !== e0) input.setSelectionRange(s0, e0); } }, 80);
+        }
+      }
+      /** 还没改过的占位符被输入改动了（手机上光标常落在 {…} 中间，字插进占位符里）：整格换成这次输入的内容。组字期间不动。 */
+      function fixPending() {
+        if (!act || !act.p) return;
+        const [s0, e0] = region();
+        if (e0 < s0) return;
+        const P = `{${act.label}}`, X = input.value.slice(s0, e0);
+        if (X === P) return;
+        act.p = false;
+        input.setRangeText(slotEdit(P, X), s0, e0, 'end');
       }
       function finish(toEnd) {
         if (!act) return;
@@ -268,7 +285,9 @@ async function mountWizard(host, { kind, editId, app }) {
         if (e0 < s0 || input.selectionStart < s0 || input.selectionEnd > e0) finish(false); else paint();
       };
       const titleClr = clearBtn(t('checkTitle'), { read: () => input.value, write: (v) => { act = null; input.value = v; input.dispatchEvent(new Event('input')); input.focus(); } });
-      input.addEventListener('input', () => { draft.title = input.value; watch(); paint(); changed(); titleClr.show(!!input.value); });
+      input.addEventListener('input', (e) => { if (!e.isComposing) fixPending(); draft.title = input.value; watch(); paint(); changed(); titleClr.show(!!input.value); });
+      // 组字结束后 Chrome 不再补发 input：在这里修占位符，再走一遍 input 的更新
+      input.addEventListener('compositionend', () => { if (act && act.p) { fixPending(); input.dispatchEvent(new Event('input')); } });
       input.addEventListener('scroll', () => { back.scrollLeft = input.scrollLeft; });
       input.addEventListener('keyup', watch);
       input.addEventListener('blur', () => tip.hide());
@@ -298,17 +317,111 @@ async function mountWizard(host, { kind, editId, app }) {
           if (m) { e.preventDefault(); input.setRangeText('', m.index, pos, 'end'); input.dispatchEvent(new Event('input')); }
         } else if (e.key === 'Enter') { e.preventDefault(); editor.focusFirstSlot() || editor.focus(); }
       });
-      const editor = mdEditor({ help: true, clearLabel: t('keepBody'), value: draft.body, placeholder: t('bodyPh'), onChange: (v) => { if (v !== draft.body) { draft.body = v; changed(); } } });
+      // ── 手机：键盘上方的填空条 ──
+      // 软键盘没有 Tab；安卓输入法的退格、回车常常只给 keyCode 229，按键判断收不到。桌面那套按键在手机上走不通，
+      // 触屏改成：进这一步不自动弹键盘，点哪个填空就从哪个开始；
+      // 填的时候键盘上沿挂一条：正在填哪一格、还剩几个，「删掉 / 下一个 / 完成」替代退格、Tab、回车。
+      const touch = matchMedia('(hover:none)').matches;
+      const FULL_SLOT = /^\{[^{}\n]{1,24}\}$/;
+      const slotsLeft = () => md.slots(input.value).length + editor.slotCount();
+      const curSlot = () => {
+        if (act) { const [s0, e0] = region(); return { label: act.label, pending: FULL_SLOT.test(input.value.slice(s0, e0)) }; }
+        return editor.activeSlot();
+      };
+      /** 下一个没填的空：标题往后 → 简介 → 回到标题开头（跳过的空还会轮到）。 */
+      function nextAny() {
+        fixPending();
+        if (act) {
+          const m = nextSlot(region()[1]);
+          if (m) return enter(m);
+          finish(true);
+          if (editor.focusFirstSlot()) return;
+          const m0 = nextSlot(0);
+          if (m0) enter(m0);
+          return;
+        }
+        if (editor.activeSlot()) {
+          if (editor.nextSlot()) return;
+          editor.finishSlot();
+          const m = nextSlot(0);
+          if (m) return enter(m);
+          editor.focusFirstSlot();
+          return;
+        }
+        focusStart();
+      }
+      /** 删掉这一格（不需要的空），还有别的就接着去下一个。 */
+      function dropCur() {
+        if (act) {
+          const [s0, e0] = region();
+          act = null;
+          input.setRangeText('', s0, e0, 'end');
+          input.dispatchEvent(new Event('input'));
+          paint();
+        } else editor.clearSlot();
+        if (slotsLeft()) nextAny();
+      }
+      /** 这一格算填完，收起键盘。 */
+      function doneCur() {
+        if (act) { fixPending(); finish(true); input.blur(); } else { editor.finishSlot(); editor.blur(); }
+        if (ui.root.activeElement && ui.root.activeElement.blur) ui.root.activeElement.blur();
+      }
+      const keep = { onpointerdown: (e) => e.preventDefault(), onmousedown: (e) => e.preventDefault() }; // 点按钮不抢焦点，键盘不收
+      const sbName = h('span.sb-name'), sbInfo = h('span.sb-info');
+      const sbDel = h('button.sb-btn.del', { type: 'button', ...keep, onclick: dropCur }, icon('trash', 15), h('span', t('sbDelete')));
+      const sbNextLbl = h('span');
+      const sbNext = h('button.sb-btn.pri', { type: 'button', ...keep, onclick: nextAny }, sbNextLbl, icon('arrowRight', 15));
+      const sbDone = h('button.sb-btn', { type: 'button', ...keep, onclick: doneCur }, icon('check', 15), h('span', t('sbDone')));
+      const sbar = touch ? h('div.sbar', { role: 'toolbar' }, h('div.sb-txt', sbName, sbInfo), sbDel, sbNext, sbDone) : null;
+      let focused = false, barRaf = 0, lastLeft = -1, okUntil = 0;
+      function schedBar() { if (touch && !barRaf) barRaf = requestAnimationFrame(drawBar); }
+      function drawBar() {
+        barRaf = 0;
+        if (disposed || !sbar) return;
+        const n = slotsLeft(), c = curSlot();
+        if (lastLeft > 0 && n === 0) { okUntil = Date.now() + 1800; setTimeout(schedBar, 1850); }
+        lastLeft = n;
+        const show = focused && (n > 0 || !!c || Date.now() < okUntil);
+        if (!sbar.isConnected) ui.layer.append(sbar);
+        sbar.classList.toggle('in', show);
+        const nav = ui.root.querySelector('.navbar');
+        if (nav) nav.classList.toggle('kb', show);
+        if (!show) return;
+        const others = n - (c && c.pending ? 1 : 0);
+        const ok = !n && !c;
+        sbar.classList.toggle('ok', ok);
+        clear(sbName).append(icon(ok ? 'check' : 'sparkle', 14), h('span', c ? c.label : ok ? t('sbAllDone') : t('sbHave', { n })));
+        sbInfo.textContent = c ? (others ? t('sbLeft', { n: others }) : t('sbLast')) : '';
+        sbInfo.hidden = !sbInfo.textContent;
+        sbDel.hidden = !c;
+        sbNext.hidden = c ? others <= 0 : !n;
+        sbNextLbl.textContent = c ? t('sbNext') : t('sbStart');
+      }
+      const vv = window.visualViewport;
+      const fitBar = () => { if (sbar) sbar.style.bottom = (vv ? Math.max(0, Math.round(innerHeight - vv.height - vv.offsetTop)) : 0) + 'px'; };
+      if (touch && vv) { vv.addEventListener('resize', fitBar); vv.addEventListener('scroll', fitBar); fitBar(); }
+      const editor = mdEditor({ help: true, clearLabel: t('keepBody'), value: draft.body, placeholder: t('bodyPh'), onSlot: schedBar, onChange: (v) => { if (v !== draft.body) { draft.body = v; changed(); } } });
       paint();
       titleClr.show(!!input.value);
       const focusStart = () => { if (disposed) return; const m = nextSlot(0); if (m) enter(m); else if (!editor.focusFirstSlot()) input.focus(); };
-      const guide = () => showHelp({ at: 'slots', onClose: () => setTimeout(focusStart, 60) });
+      // 触屏不自动进填空：程序里 focus 会突然弹出键盘（iOS 干脆不弹，光标停着却没键盘），由用户点填空进入
+      const guide = () => showHelp({ at: 'slots', onClose: () => { if (!touch) setTimeout(focusStart, 60); } });
       // 第一次进这一步：先放填空指引，关掉后再把光标放进第一个填空
-      setTimeout(() => { if (disposed) return; if (!store.get('slotGuideDone')) guide(); else focusStart(); }, 80);
+      setTimeout(() => { if (disposed) return; if (!store.get('slotGuideDone')) guide(); else if (!touch) focusStart(); }, 80);
+      const rootEl = h('div', h('div.titlebox', back, input, titleClr.el), editor.el);
+      if (touch) {
+        rootEl.addEventListener('focusin', () => { focused = true; schedBar(); });
+        rootEl.addEventListener('focusout', () => setTimeout(() => { const a = ui.root.activeElement; focused = !!a && rootEl.contains(a); schedBar(); }, 0));
+        schedBar();
+      }
       return {
-        el: h('div', h('div.titlebox', back, input, titleClr.el), editor.el),
+        el: rootEl,
         guide,
-        dispose: () => { tip.remove(); editor.destroy(); },
+        dispose: () => {
+          tip.remove(); editor.destroy();
+          if (sbar) { sbar.remove(); cancelAnimationFrame(barRaf); const nav = ui.root.querySelector('.navbar'); if (nav) nav.classList.remove('kb'); }
+          if (touch && vv) { vv.removeEventListener('resize', fitBar); vv.removeEventListener('scroll', fitBar); }
+        },
         /** 进入第一个还没填的填空位（标题优先），没有返回 false。 */
         firstSlot: () => { const m = nextSlot(0); if (m) { enter(m); return true; } return editor.focusFirstSlot(); },
       };
@@ -382,7 +495,7 @@ async function mountWizard(host, { kind, editId, app }) {
       }, (e) => {
         if (coverUp !== me) return;
         coverUp = null;
-        if (e.status !== -1) toast(t('errUpload') + (env.lang === 'zh' ? '：' : ': ') + e.text, { error: true });
+        if (e.status !== -1) toast(t('errUpload') + sepColon() + e.text, { error: true });
         changed();
       });
     }
@@ -431,7 +544,7 @@ async function mountWizard(host, { kind, editId, app }) {
       if (draft.private) lines.push(['lock', t('reachPrivate')]);
       else {
         lines.push(draft.unlisted ? ['eyeOff', t('reachUnlisted')] : ['globe', t('reachPublic')]);
-        if (sens.length) lines.push(['warn', t('reachSensitive', { n: sens.slice(0, 3).join(env.lang === 'zh' ? '、' : ', ') + (sens.length > 3 ? '…' : '') }), true]);
+        if (sens.length) lines.push(['warn', t('reachSensitive', { n: sens.slice(0, 3).join(sepList()) + (sens.length > 3 ? '…' : '') }), true]);
         if (draft.rating === 'ecchi') lines.push(['eyeOff', t('reachEcchi')]);
       }
       const key = JSON.stringify(lines);

@@ -1,0 +1,22 @@
+{
+  "manifest_version": 3,
+  "name": "Iwara Enhanced",
+  "version": "__VERSION__",
+  "description": "Makes the official Iwara site more convenient: creator studio, search, pager, tag filter, translation and more. / 让 Iwara 官方网站用起来更顺手。 / Iwara 公式サイトをもっと使いやすく。",
+  "homepage_url": "https://github.com/FoxSensei001/LoveIwara",
+  "content_scripts": [
+    {
+      "matches": ["https://www.iwara.tv/*", "https://iwara.tv/*"],
+      "js": ["iwara-enhanced.js"],
+      "run_at": "document_start",
+      "world": "MAIN"
+    }
+  ],
+  "browser_specific_settings": {
+    "gecko": {
+      "id": "iwara-enhanced@loveiwara",
+      "strict_min_version": "128.0"
+    }
+  },
+  "minimum_chrome_version": "111"
+}

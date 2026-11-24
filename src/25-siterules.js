@@ -191,7 +191,7 @@ const siteRules = (() => {
     /** 界面语言对应的站点文案；没有就退回英文；都没有返回空串。 */
     text(key) {
       const texts = (data && data.texts) || {};
-      const code = env.lang === 'zh' ? 'zh' : env.lang === 'ja' ? 'ja' : 'en';
+      const code = env.lang;
       return (texts[code] && texts[code][key]) || (texts.en && texts.en[key]) || '';
     },
     /** 视频限制：{ containers:['.mp4'], codecs:['H.264','AAC'], sizeMB, premiumMB, minW, minH, minDur }，读不到的项为 null。 */

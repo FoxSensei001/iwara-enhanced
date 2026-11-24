@@ -26,7 +26,7 @@ class ApiError extends Error {
     const e0 = (this.data.errors || [])[0];
     if (e0) {
       const lbl = t('fld_' + e0.field);
-      return (lbl !== 'fld_' + e0.field ? lbl + (env.lang === 'zh' ? '：' : ': ') : '') + srvText(e0.message, e0.values);
+      return (lbl !== 'fld_' + e0.field ? lbl + sepColon() : '') + srvText(e0.message, e0.values);
     }
     if (this.status === 0) return t('errNetwork');
     if (this.status === 401) return t('errLogin');
@@ -110,7 +110,8 @@ const svc = {
   async boot() {
     const [me, config] = await Promise.all([api.call('/user'), api.call('/config').catch(() => null)]);
     env.user = me.user;
-    detectLang(me.user.locale);
+    // 跟站点当前显示的语言走（站点切语言写的是 localStorage.locale），站点增强那边也是同一个来源；没有再用账号设置
+    detectLang(localStorage.getItem('locale') || me.user.locale);
     svc.config = config || { categories: [], blacklist: [] };
     return me.user;
   },

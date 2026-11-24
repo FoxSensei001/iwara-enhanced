@@ -3,7 +3,9 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "build": "node build.mjs"
+    "build": "node build.mjs",
+    "build:ext": "node build-extension.mjs --build",
+    "dev": "node dev-loader.mjs && node build.mjs && node --watch-path=src --watch-path=vendor build.mjs"
   },
   "devDependencies": {
     "@milkdown/kit": "^7.23.0",

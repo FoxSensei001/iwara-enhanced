@@ -254,9 +254,18 @@ function hoverPanel(anchor, build) {
     pop.style.transformOrigin = `center ${above ? 'bottom' : 'top'}`;
     requestAnimationFrame(() => pop && pop.classList.add('in'));
   };
-  anchor.addEventListener('pointerenter', () => { clearTimeout(timer); if (!pop) timer = setTimeout(open, 120); });
-  anchor.addEventListener('pointerleave', later);
-  anchor.addEventListener('pointerdown', close);
+  // 触屏没有悬停：点一下开、再点一下或点别处收（按悬停的写法，按下就收、抬手又离开，面板一闪就没）
+  const outside = (e) => { if (!pop || e.composedPath().includes(pop) || e.composedPath().includes(anchor)) return; close(); document.removeEventListener('pointerdown', outside, true); };
+  anchor.addEventListener('pointerenter', (e) => { if (e.pointerType === 'touch') return; clearTimeout(timer); if (!pop) timer = setTimeout(open, 120); });
+  anchor.addEventListener('pointerleave', (e) => { if (e.pointerType !== 'touch') later(); });
+  anchor.addEventListener('pointerdown', (e) => {
+    if (e.pointerType !== 'touch') { close(); return; }
+    clearTimeout(timer);
+    document.removeEventListener('pointerdown', outside, true);
+    if (pop) { close(); return; }
+    open();
+    document.addEventListener('pointerdown', outside, true);
+  });
   // 键盘：Tab 到触发点上也能看
   anchor.addEventListener('focus', () => { clearTimeout(timer); if (!pop) open(); });
   anchor.addEventListener('blur', later);

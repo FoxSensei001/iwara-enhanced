@@ -42,13 +42,19 @@ STYLE.push(`
 @keyframes dswap2{0%,32%{opacity:0;transform:translateY(8px)}42%,88%{opacity:1;transform:none}96%,100%{opacity:0}}
 `);
 
+/** 引导动画里的示例文字（defineStrings 是 88-site.js 的函数声明，会提升）。 */
+defineStrings(
+  { tourDemoQuery: '初音未来', tourDemoMiku: '初音未来', tourDemoDance: '舞蹈', tourDemoWho: '角色', tourDemoMiku2: '初音未来', tourDemoSong: '曲名' },
+  { tourDemoQuery: 'miku', tourDemoMiku: 'Hatsune Miku', tourDemoDance: 'Dance', tourDemoWho: 'Who', tourDemoMiku2: 'Miku', tourDemoSong: 'Song' },
+  { tourDemoQuery: '初音ミク', tourDemoMiku: '初音ミク', tourDemoDance: 'ダンス', tourDemoWho: 'キャラ', tourDemoMiku2: '初音ミク', tourDemoSong: '曲名' },
+);
+
 /** 三张示意动画本体（首次引导和帮助弹窗共用）。 */
 function tourDemos() {
-  const zh = env.lang === 'zh';
   return [
     h('div.d-steps', h('b', icon('upload', 16)), h('u'), h('b', icon('pencil', 16)), h('u'), h('b', icon('tag', 16)), h('u'), h('b', icon('check', 16))),
-    h('div.d-tags', h('div.f', icon('search'), h('span', zh ? '初音未来' : 'miku'), h('i')), h('div.o', h('em', zh ? '初音未来' : 'Hatsune Miku'), h('em', zh ? '舞蹈' : 'Dance'), h('em', 'MikuMikuDance'))),
-    h('div.d-tpl', '【MMD】', h('span.s', h('span', zh ? '角色' : 'Who'), h('span', zh ? '初音未来' : 'Miku')), ' - ', h('span.s', h('span', zh ? '曲名' : 'Song'), h('span', 'Gimme×Gimme'))),
+    h('div.d-tags', h('div.f', icon('search'), h('span', t('tourDemoQuery')), h('i')), h('div.o', h('em', t('tourDemoMiku')), h('em', t('tourDemoDance')), h('em', 'MikuMikuDance'))),
+    h('div.d-tpl', '【MMD】', h('span.s', h('span', t('tourDemoWho')), h('span', t('tourDemoMiku2'))), ' - ', h('span.s', h('span', t('tourDemoSong')), h('span', 'Gimme×Gimme'))),
   ];
 }
 

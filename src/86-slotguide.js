@@ -72,6 +72,24 @@ STYLE.push(`
 .g-legend span{display:inline-flex;align-items:center;gap:5px}
 .g-legend kbd{display:inline-grid;place-items:center;min-width:22px;height:20px;padding:0 5px;border-radius:5px;border:1px solid var(--line2);box-shadow:0 1px 0 var(--line2);background:var(--card);font:600 10.5px "Geist Mono",ui-monospace,monospace;color:var(--fg2)}
 .g-replay{position:absolute;left:12px;bottom:10px;z-index:9}
+/* 触屏版演示：手指点按代替鼠标箭头，键盘上方的填空条代替按键 */
+.g-cur.touch svg{display:none}
+.g-cur.touch i{position:absolute;left:-10px;top:-10px;width:26px;height:26px;border-radius:50%;background:color-mix(in srgb,var(--fg) 18%,transparent);border:2px solid color-mix(in srgb,var(--fg) 50%,transparent);transition:transform .12s}
+.g-cur.touch.down i{transform:scale(.78)}
+.g-cur.touch.hold i{transform:scale(.78);background:color-mix(in srgb,var(--blue) 30%,transparent)}
+.g-sbar{position:absolute;left:12px;right:12px;bottom:10px;z-index:6;display:flex;align-items:center;gap:5px;padding:5px 5px 5px 10px;border-radius:12px;background:var(--card);border:1px solid var(--line);box-shadow:var(--shadow);opacity:0;transform:translateY(10px);transition:opacity .16s,transform .4s var(--spring)}
+.g-sbar.in{opacity:1;transform:none}
+.g-sb-txt{flex:1;min-width:0;display:flex;flex-direction:column;line-height:1.25}
+.g-sb-name{font-size:12.5px;font-weight:600;color:var(--amber);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.g-sb-info{font-size:10.5px;color:var(--fg3)}
+.g-sb-info[hidden],.g-sb-btn[hidden]{display:none}
+.g-sb-btn{display:inline-flex;align-items:center;gap:3px;flex:none;height:30px;padding:0 9px;border-radius:8px;border:1px solid var(--line2);background:var(--card);font-size:12px;font-weight:500;transition:transform .2s var(--ease)}
+.g-sb-btn.pri{background:var(--fg);border-color:var(--fg);color:var(--inv)}
+.g-sb-btn.del{border-color:transparent;color:var(--fg2);padding:0 6px}
+.g-sb-btn.press{transform:scale(.92)}
+.g-touch .g-pop .g-k{display:none}
+.g-stage:has(.g-touch) .g-replay{left:auto;right:48px;bottom:auto;top:8px}
+@media (max-width:640px){.g-scene{padding:22px 16px}.g-field{font-size:15px;padding:0 10px}.g-field.g-body{font-size:13px}}
 `);
 
 /** 演示里那只鼠标的箭头。 */
@@ -91,9 +109,22 @@ function guideArrow() {
   return svg;
 }
 
+/** 填空指引动画里的演示文字（defineStrings 是 88-site.js 的函数声明，会提升）。 */
+defineStrings({
+  sgSpaceKey: '空格', sgTplName: 'MMD 舞蹈', sgA: '角色', sgB: '曲名', sgC: '模型作者', sgWho: '初音ミク', sgWho2: '初音未来', sgAuthor: '某某P', sgModel: '模型：',
+  sgEditLbl: '编辑模板 · 标题格式', sgPubLbl: '发布 · 标题', sgBodyLbl: '简介', sgLeft: '{n} 处填空未填', sgAllOk: '填空都已填好', sgNext: '下一步', sgNamePh: '填空名',
+}, {
+  sgSpaceKey: 'Space', sgTplName: 'MMD dance', sgA: 'Character', sgB: 'Song', sgC: 'Model by', sgWho: 'Miku', sgWho2: 'Hatsune Miku', sgAuthor: 'SomeoneP', sgModel: 'Model: ',
+  sgEditLbl: 'Edit template · Title pattern', sgPubLbl: 'Publish · Title', sgBodyLbl: 'Description', sgLeft: '{n} blanks left', sgAllOk: 'All blanks filled', sgNext: 'Next', sgNamePh: 'Blank name',
+}, {
+  sgSpaceKey: 'スペース', sgTplName: 'MMDダンス', sgA: 'キャラ', sgB: '曲名', sgC: 'モデル作者', sgWho: '初音ミク', sgWho2: '初音ミク', sgAuthor: '○○P', sgModel: 'モデル：',
+  sgEditLbl: 'テンプレートを編集 · タイトル形式', sgPubLbl: '投稿 · タイトル', sgBodyLbl: '説明', sgLeft: '未入力の空欄が {n} 個', sgAllOk: '空欄はすべて入力済み', sgNext: '次へ', sgNamePh: '空欄の名前',
+});
+
 /** 填空指引的四页：{ pages: [{ title, text, legend, play(root, kit) }], kit(root, alive), STOP }。播放器在帮助弹窗里（87-help.js）。 */
 function slotGuidePages() {
   const zh = env.lang === 'zh';
+  const touch = matchMedia('(hover:none)').matches; // 触屏：演示与文案换成点按 + 填空条
   const STOP = {};
   let token = 0;
 
@@ -106,8 +137,9 @@ function slotGuidePages() {
       const s = root.getBoundingClientRect(), r = el.getBoundingClientRect(), k = scale();
       return { x: (r.left - s.left) / k, y: (r.top - s.top) / k, w: r.width / k, h: r.height / k };
     };
-    const cur = h('div.g-cur', guideArrow());
+    const cur = h('div.g-cur' + (touch ? '.touch' : ''), guideArrow(), touch && h('i'));
     const keys = h('div.g-keys');
+    if (touch) root.classList.add('g-touch');
     root.append(cur, keys);
     let cx = 0, cy = 0;
     const place = (x, y) => { cx = x; cy = y; cur.style.transform = `translate(${x - 4}px,${y - 3}px)`; };
@@ -128,6 +160,31 @@ function slotGuidePages() {
         cur.classList.remove('down');
         setTimeout(() => root.querySelectorAll('.g-rip').forEach((r) => r.remove()), 600);
         await w(120);
+      },
+      /** 触屏长按：手指按住不动一会儿（长按选字用）。 */
+      async hold(ms = 600) {
+        cur.classList.add('hold');
+        root.append(h('div.g-rip', { style: { left: cx + 'px', top: cy + 'px' } }));
+        await w(ms);
+        cur.classList.remove('hold');
+        setTimeout(() => root.querySelectorAll('.g-rip').forEach((r) => r.remove()), 600);
+      },
+      /** 演示用的填空条（触屏版）：show(名字, 说明, {next}) 摆出来，tap('next'|'del'|'done') 手指去点。 */
+      fakeBar() {
+        const name = h('span.g-sb-name'), info = h('span.g-sb-info');
+        const btns = { del: h('span.g-sb-btn.del', icon('trash', 12), t('sbDelete')), next: h('span.g-sb-btn.pri', t('sbNext'), icon('arrowRight', 12)), done: h('span.g-sb-btn', icon('check', 12), t('sbDone')) };
+        const el = h('div.g-sbar', h('div.g-sb-txt', name, info), btns.del, btns.next, btns.done);
+        root.append(el);
+        return {
+          show(label, more, { next = true } = {}) { name.textContent = label; info.textContent = more || ''; info.hidden = !more; btns.next.hidden = !next; el.classList.add('in'); },
+          hide() { el.classList.remove('in'); },
+          async tap(key) {
+            const b = box(btns[key]);
+            if (!cur.classList.contains('on')) api.show(Math.min(root.offsetWidth - 16, b.x + b.w / 2 + 40), Math.min(root.offsetHeight - 8, b.y + b.h + 30));
+            await api.moveTo(btns[key], 0.5, 0.55, 420);
+            btns[key].classList.add('press'); await api.click(); btns[key].classList.remove('press');
+          },
+        };
       },
       async key(label, hold = 260) { keys.append(h('span.g-kbd', label)); setTimeout(() => keys.firstChild && keys.firstChild.remove(), 1000); await w(hold); },
       caret: () => h('span.g-caret'),
@@ -157,7 +214,7 @@ function slotGuidePages() {
           await w(95 + Math.random() * 50);
         }
         await w(380);
-        await api.key(zh ? '空格' : 'Space', 160);
+        await api.key(t('sgSpaceKey'), 160);
         const out = cands[0];
         comp.replaceWith(document.createTextNode(out));
         bar.classList.remove('in');
@@ -181,11 +238,10 @@ function slotGuidePages() {
   const chars = (str) => [...str].map((c) => h('span.g-ch', c));
 
   // 演示内容
-  const D = zh
-    ? { tplName: 'MMD 舞蹈', a: '角色', b: '曲名', c: '模型作者', who: '初音ミク', song: 'Gimme×Gimme', who2: '初音未来', author: '某某P', model: '模型：',
-      editLbl: '编辑模板 · 标题格式', pubLbl: '发布 · 标题', bodyLbl: '简介', apply: '套用模板', left: (n) => `${n} 处填空未填`, allOk: '填空都已填好', next: '下一步', maker: '设为填空', namePh: '填空名' }
-    : { tplName: 'MMD dance', a: 'Character', b: 'Song', c: 'Model by', who: 'Miku', song: 'Gimme×Gimme', who2: 'Hatsune Miku', author: 'SomeoneP', model: 'Model: ',
-      editLbl: 'Edit template · Title pattern', pubLbl: 'Publish · Title', bodyLbl: 'Description', apply: 'Use template', left: (n) => `${n} blanks left`, allOk: 'All blanks filled', next: 'Next', maker: t('makeSlot'), namePh: t('slotName') };
+  const D = {
+    tplName: t('sgTplName'), a: t('sgA'), b: t('sgB'), c: t('sgC'), who: t('sgWho'), song: 'Gimme×Gimme', who2: t('sgWho2'), author: t('sgAuthor'), model: t('sgModel'),
+    editLbl: t('sgEditLbl'), pubLbl: t('sgPubLbl'), bodyLbl: t('sgBodyLbl'), apply: t('useTemplate'), left: (n) => t('sgLeft', { n }), allOk: t('sgAllOk'), next: t('sgNext'), maker: t('makeSlot'), namePh: t('sgNamePh'),
+  };
 
   const scenes = [
     // ① 填空是什么：套用模板 → 标题里留下两个空位
@@ -227,7 +283,7 @@ function slotGuidePages() {
       // 拖选
       await k.moveTo(sel[0], 0.02, 0.6, 800);
       k.box(sel[0]);
-      await k.w(120);
+      if (touch) { sel[0].classList.add('sel'); await k.hold(650); } else await k.w(120);
       for (const c of sel) { c.classList.add('sel'); await k.moveTo(c, 1, 0.6, 110); }
       await k.w(250);
       // 浮出「设为填空」
@@ -252,7 +308,7 @@ function slotGuidePages() {
       ph.remove();
       const text = h('span');
       inBox.insertBefore(text, caret);
-      if (zh) await k.ime(text, null, 'jiaose', [['j', ['就', '将', '级']], ['jia', ['家', '加', '价']], ['jiao', ['叫', '教', '角']], ['jiaos', ['角色', '脚色', '叫声']], ['jiaose', ['角色', '脚色', '角', '叫']]], pop);
+      if (zh) await k.ime(text, null, 'jiaose', [['j', ['就', '将', '级']], ['jia', ['家', '加', '价']], ['jiao', ['叫', '教', '角']], ['jiaos', ['角色', '脚色', '叫声']], ['jiaose', ['角色', '脚色', '角', '叫']]], pop); // i18n-ok 拼音输入法演示的候选字，不是界面文案
       else await k.type(text, D.a, 70);
       await k.w(300);
       await k.key('↵', 200);
@@ -281,6 +337,8 @@ function slotGuidePages() {
       const selSpan = h('span.g-ch.sel', label);
       clear(s1).append(selSpan);
       const tip = k.tip(s1, label);
+      const bar = touch && k.fakeBar();
+      if (bar) bar.show(label, t('sbLeft', { n: 1 }));
       await k.move(k.box(s1).x + 40, k.box(s1).y + 70, 500);
       k.hideCursor();
       await k.w(500);
@@ -292,8 +350,8 @@ function slotGuidePages() {
       if (zh) {
         const follow = setInterval(tip.follow, 30);
         try {
-          await k.ime(text, null, 'chuyin', [['c', ['从', '才', '此']], ['chu', ['出', '处', '初']], ['chuy', ['出于', '初一']], ['chuyin', ['初音', '出音', '处']]], field);
-          await k.ime(text, null, 'weilai', [['w', ['我', '为', '玩']], ['wei', ['为', '未', '位']], ['weil', ['为了', '未来']], ['weilai', ['未来', '为来', '尾']]], field);
+          await k.ime(text, null, 'chuyin', [['c', ['从', '才', '此']], ['chu', ['出', '处', '初']], ['chuy', ['出于', '初一']], ['chuyin', ['初音', '出音', '处']]], field); // i18n-ok 拼音输入法演示的候选字
+          await k.ime(text, null, 'weilai', [['w', ['我', '为', '玩']], ['wei', ['为', '未', '位']], ['weil', ['为了', '未来']], ['weilai', ['未来', '为来', '尾']]], field); // i18n-ok 拼音输入法演示的候选字
         } finally { clearInterval(follow); }
       } else {
         const follow = setInterval(tip.follow, 30);
@@ -301,7 +359,7 @@ function slotGuidePages() {
       }
       tip.follow();
       await k.w(500);
-      await k.key('↵', 200);
+      if (touch) { await bar.tap('done'); bar.hide(); k.hideCursor(); } else await k.key('↵', 200);
       caret.remove();
       s1.classList.remove('act');
       s1.classList.add('fin', 'flash');
@@ -343,6 +401,29 @@ function slotGuidePages() {
         await k.w(280);
         return () => { caret.remove(); s.classList.remove('act'); s.classList.add('fin', 'flash'); tip.hide(); };
       };
+      if (touch) {
+        // 触屏：点第一个空进入，填空条挂在下面；「下一个」一格格往下，最后「完成」
+        const bar = k.fakeBar();
+        await k.w(400);
+        k.show(root.offsetWidth - 40, root.offsetHeight - 20);
+        await k.moveTo(s1, 0.5, 0.6, 700);
+        await k.click();
+        title.classList.add('focus');
+        bar.show(D.a, t('sbLeft', { n: 2 }));
+        k.hideCursor();
+        let fin = await fill(s1, title, D.who2, 55);
+        await bar.tap('next'); fin(); tick(); k.hideCursor();
+        bar.show(D.b, t('sbLeft', { n: 1 }));
+        fin = await fill(s2, title, D.song, 50);
+        await bar.tap('next'); fin(); tick(); k.hideCursor();
+        title.classList.remove('focus'); body.classList.add('focus');
+        bar.show(D.c, t('sbLast'), { next: false });
+        fin = await fill(s3, body, D.author, 70);
+        await bar.tap('done'); fin(); tick();
+        bar.hide(); body.classList.remove('focus'); k.hideCursor();
+        await k.w(2200);
+        return;
+      }
       await k.w(500);
       title.classList.add('focus');
       title.insertBefore(k.caret(), title.firstChild);
@@ -364,9 +445,9 @@ function slotGuidePages() {
   ];
   const copy = [
     { title: t('sg1t'), text: t('sg1s') },
-    { title: t('sg2t'), text: t('sg2s') },
-    { title: t('sg3t'), text: t('sg3s') },
-    { title: t('sg4t'), text: t('sg4s'), legend: true },
+    { title: t('sg2t'), text: t(touch ? 'sg2sT' : 'sg2s') },
+    { title: t('sg3t'), text: t(touch ? 'sg3sT' : 'sg3s') },
+    { title: t(touch ? 'sg4tT' : 'sg4t'), text: t(touch ? 'sg4sT' : 'sg4s'), legend: true },
   ];
   return { pages: scenes.map((play, i) => ({ ...copy[i], play })), kit, STOP };
 }

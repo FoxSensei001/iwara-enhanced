@@ -5,10 +5,36 @@
 
 const SLOT_RE = /\{([^{}\n]{1,24})\}/g;
 
+/**
+ * 占位符 P（如 {角色}）被改成了 X，取出这次真正输入的部分：去掉和 P 相同的开头与结尾。
+ * 手机上点进填空后，系统会把光标重新落到手指点的位置（常在 {…} 中间），输入就插进占位符里，
+ * 得到 {角cvawd色}；按「还没改过的占位符整格作废」的规则，这里还原出 cvawd。
+ */
+function slotEdit(P, X) {
+  let a = 0;
+  while (a < P.length && a < X.length && P[a] === X[a]) a++;
+  let b = 0;
+  while (b < P.length - a && b < X.length - a && P[P.length - 1 - b] === X[X.length - 1 - b]) b++;
+  return X.slice(a, X.length - b);
+}
+
 const md = {
   slots: (text) => [...String(text || '').matchAll(SLOT_RE)].map((m) => m[1]),
-  /** 编辑器吐出的 Markdown 收个尾：裸链接别包尖括号（站点按原文显示链接），去掉末尾空行。 */
-  tidy: (text) => String(text || '').replace(/<(https?:\/\/[^\s<>]+)>/g, '$1').trimEnd(),
+  /**
+   * 编辑器吐出的 Markdown 收个尾：裸链接别包尖括号（站点按原文显示链接），去掉末尾空行；
+   * 单独成行的 `<br />` 删掉（代码块里的不动）——那是空段落被导出的样子（编辑器已关掉这条规则，这里兜底旧草稿）。
+   * 站点把它原样显示成「<br />」：用户 2026-11-24 发出的评论末尾就带着一行，标题后面编辑器自动补的空段落导出来的。
+   */
+  tidy: (text) => {
+    let fence = false;
+    const lines = String(text || '').replace(/<(https?:\/\/[^\s<>]+)>/g, '$1').split('\n').filter((ln) => {
+      if (/^\s*(```|~~~)/.test(ln)) fence = !fence;
+      return fence || !/^\s*<br\s*\/?>\s*$/i.test(ln);
+    });
+    // 删掉 `<br />` 后留下的连续空行收成一个（代码块里的空行不动）
+    fence = false;
+    return lines.filter((ln, i) => { if (/^\s*(```|~~~)/.test(ln)) fence = !fence; return fence || ln.trim() || (i > 0 && lines[i - 1].trim()); }).join('\n').trimEnd();
+  },
 };
 
 STYLE.push(`
@@ -199,7 +225,14 @@ const BARE_URL_RE = /(^|[^\w(\[/"'=])(https?:\/\/[^\s<>()[\]]+)/g;
 
 /** slotMaker：传 { guess(text) } 时，选中一小段文字会浮出「设为填空」（模板编辑用）。 */
 /** help：传了就在左下角放「格式」入口，点开站点官方的格式说明（帮助窗口的格式页）。 */
-function mdEditor({ value = '', placeholder = '', maxLength = 50000, onChange, slotMaker = null, clearLabel = null, help = false }) {
+/** onSlot：填空状态（进入 / 离开 / 内容变化）可能变了时调用，手机上的填空条靠它刷新。 */
+/**
+ * slots：认不认 `{名字}` 填空（发布页 / 模板要；站点上的评论、发帖框不要，那里的花括号就是普通文字）。
+ * scrollMargin：光标滚进视口时上下各让出多少（工作台有吸顶头和吸底步骤栏；站点页面只有顶栏）。
+ * limit：字数一直显示成「已输入 / 上限」（站点上有上限提示的输入框要；默认只在有字时显示字数）。快到上限变琥珀、超出变红。
+ */
+function mdEditor({ value = '', placeholder = '', maxLength = 50000, onChange, slotMaker = null, clearLabel = null, help = false, onSlot = null, slots = true, scrollMargin = { top: 84, bottom: 112 }, limit = false }) {
+  const slotsOf = (doc) => (slots ? findSlots(doc) : []);
   let ed = null, view = null, destroyed = false, current = md.tidy(value), mentionPop = null;
   let quiet = false; // set() 整篇替换时不做链接转换：打开已有简介不该被改写
   const fresh = new Set(); // 这次编辑里新写进来的站内链接：只有它们会换成作品名
@@ -213,8 +246,9 @@ function mdEditor({ value = '', placeholder = '', maxLength = 50000, onChange, s
   const emit = (text) => {
     text = md.tidy(text);
     if (clr) clr.show(!!text.trim());
-    count.textContent = text.length ? String(text.length) : '';
-    count.style.color = text.length > maxLength ? 'var(--red)' : '';
+    const n = text.length;
+    count.textContent = limit ? `${n.toLocaleString()} / ${maxLength.toLocaleString()}` : n ? String(n) : '';
+    count.style.color = n > maxLength ? 'var(--red)' : limit && n >= maxLength * 0.9 ? 'var(--amber)' : '';
     if (text === current) return;
     current = text;
     onChange && onChange(text);
@@ -404,8 +438,15 @@ function mdEditor({ value = '', placeholder = '', maxLength = 50000, onChange, s
   const tip = slotTip();
   function activate(v, slot) {
     const label = v.state.doc.textBetween(slot.from + 1, slot.to - 1);
-    v.dispatch(v.state.tr.setSelection(MK.TextSelection.create(v.state.doc, slot.from, slot.to)).setMeta(slotKey, { from: slot.from, to: slot.to, label }).scrollIntoView());
+    // p：这一格还是原样的占位符。第一次输入整格替换（见 view.update 里的修正），不管光标落在格子里哪儿
+    v.dispatch(v.state.tr.setSelection(MK.TextSelection.create(v.state.doc, slot.from, slot.to)).setMeta(slotKey, { from: slot.from, to: slot.to, label, p: true }).scrollIntoView());
     v.focus();
+    // 触屏：点按之后系统还会再摆一次光标，把整格选中盖掉；稍后补选一次（补不上也有上面的整格替换兜底）
+    if (matchMedia('(hover:none)').matches) setTimeout(() => {
+      if (destroyed || !view || v.composing) return;
+      const a = slotKey.getState(v.state);
+      if (a && a.p && a.from === slot.from && (v.state.selection.from !== a.from || v.state.selection.to !== a.to)) v.dispatch(v.state.tr.setSelection(MK.TextSelection.create(v.state.doc, a.from, a.to)));
+    }, 80);
   }
   function finish(v, toEnd) {
     const act = slotKey.getState(v.state);
@@ -413,6 +454,34 @@ function mdEditor({ value = '', placeholder = '', maxLength = 50000, onChange, s
     const tr = v.state.tr.setMeta(slotKey, null);
     if (toEnd) tr.setSelection(MK.TextSelection.create(v.state.doc, act.to));
     v.dispatch(tr);
+  }
+  /** 还没改过的占位符被输入改动了（光标落在 {…} 中间打的字）：整格换成这次输入的内容。输入法组字期间不动，组完再修。 */
+  function fixPending(v) {
+    if (destroyed || !view || v.composing) return;
+    const sa = slotKey.getState(v.state);
+    if (!sa || !sa.p) return;
+    const P = `{${sa.label}}`, X = v.state.doc.textBetween(sa.from, sa.to);
+    if (X === P) return;
+    const ins = slotEdit(P, X);
+    const tr = ins ? v.state.tr.insertText(ins, sa.from, sa.to) : v.state.tr.delete(sa.from, sa.to);
+    tr.setSelection(MK.TextSelection.create(tr.doc, sa.from + ins.length)).setMeta(slotKey, { from: sa.from, to: sa.from + ins.length, label: sa.label, p: false });
+    v.dispatch(tr);
+  }
+  /**
+   * 触屏：系统按手指落点摆光标，点击回调要么不来、要么被随后的摆光标盖掉。不靠点击，改看结果——
+   * 光标落进某个填空里面：进入这一格并整格选中；还没改过的这一格，光标在里面挪到哪都吸回整格选中。
+   */
+  function touchSnap(v) {
+    if (destroyed || !view || v.composing || !v.hasFocus() || !matchMedia('(hover:none)').matches) return;
+    const { from, to, empty } = v.state.selection;
+    const a = slotKey.getState(v.state);
+    if (a && a.p) {
+      if (from >= a.from && to <= a.to && (from !== a.from || to !== a.to)) v.dispatch(v.state.tr.setSelection(MK.TextSelection.create(v.state.doc, a.from, a.to)));
+      return;
+    }
+    if (!empty) return;
+    const slot = slotsOf(v.state.doc).find((x) => from >= x.from && from < x.to); // 点在左边缘也算
+    if (slot && !(a && a.from === slot.from)) activate(v, slot);
   }
   const helper = MK.$prose(() => new MK.Plugin({
     key: slotKey,
@@ -427,7 +496,7 @@ function mdEditor({ value = '', placeholder = '', maxLength = 50000, onChange, s
         const from = tr.mapping.map(act.from, -1), to = Math.max(from, tr.mapping.map(act.to, 1));
         const sel = tr.selection;
         if (sel.from < from || sel.to > to) return null; // 光标离开编辑区：结束
-        return { from, to, label: act.label };
+        return { from, to, label: act.label, p: act.p };
       },
     },
     view: (v0) => {
@@ -441,17 +510,25 @@ function mdEditor({ value = '', placeholder = '', maxLength = 50000, onChange, s
       addEventListener('scroll', onScroll, true);
       const onBlur = () => tip.hide();
       v0.dom.addEventListener('blur', onBlur);
+      // 组字结束时 ProseMirror 未必再发事务，update 不一定会跑：自己补查一次
+      const onCompEnd = () => setTimeout(() => fixPending(v0), 30);
+      v0.dom.addEventListener('compositionend', onCompEnd);
       return {
         update(v) {
+          // 不在 update 里同步 dispatch（会打乱其他插件视图的这一轮更新），放到微任务里
+          const sa = slotKey.getState(v.state);
+          if (sa && sa.p) Promise.resolve().then(() => fixPending(v));
+          Promise.resolve().then(() => touchSnap(v));
           const q = mentionQuery(v);
           if (q && !mentionNick(q)) showMention(v, q); else closeMention();
           place(v); updateMaker(v); if (fresh.size) resolveTitles(v);
+          if (onSlot) onSlot();
           for (const m of findMentions(v.state)) {
             if (linkTitles.has(profileHref(m.name))) continue;
             fetchLinkTitle(profileHref(m.name), (res) => { if (res.state === 'ok' && view && !destroyed) view.dispatch(view.state.tr.setMeta('iwe-link', true)); });
           }
         },
-        destroy() { removeEventListener('scroll', onScroll, true); v0.dom.removeEventListener('blur', onBlur); tip.hide(); },
+        destroy() { removeEventListener('scroll', onScroll, true); v0.dom.removeEventListener('blur', onBlur); v0.dom.removeEventListener('compositionend', onCompEnd); tip.hide(); },
       };
     },
     props: {
@@ -489,7 +566,7 @@ function mdEditor({ value = '', placeholder = '', maxLength = 50000, onChange, s
         const act = slotKey.getState(v.state);
         const { from, to, empty } = v.state.selection;
         if (e.key === 'Tab' && !e.shiftKey) {
-          const all = findSlots(v.state.doc);
+          const all = slotsOf(v.state.doc);
           const next = all.find((s) => s.from >= (act ? act.to : to)) || all.find((s) => s.from !== from);
           if (next) { e.preventDefault(); activate(v, next); return true; }
           // 已经是最后一格：这一格算填完，光标停在它后面，不让 Tab 把焦点带到别的控件上
@@ -503,7 +580,7 @@ function mdEditor({ value = '', placeholder = '', maxLength = 50000, onChange, s
           return false;
         }
         if (e.key === 'Backspace' && empty) {
-          const slot = findSlots(v.state.doc).find((s) => s.to === from);
+          const slot = slotsOf(v.state.doc).find((s) => s.to === from);
           if (slot) { e.preventDefault(); v.dispatch(v.state.tr.delete(slot.from, slot.to)); return true; }
         }
         // 转换过的东西是一整块：显示成昵称的 @提及、显示成作品名 / 自定文字的站内链接，退格 / Delete 一下删整块，不会一个字一个字地删
@@ -529,7 +606,7 @@ function mdEditor({ value = '', placeholder = '', maxLength = 50000, onChange, s
         }
         const chip = findChips(v.state).find((m) => pos > m.from && pos < m.to);
         if (chip) { v.dispatch(v.state.tr.setSelection(MK.TextSelection.create(v.state.doc, chip.to))); return true; }
-        const slot = findSlots(v.state.doc).find((s) => pos >= s.from && pos < s.to);
+        const slot = slotsOf(v.state.doc).find((s) => pos >= s.from && pos < s.to);
         if (!slot) return false;
         const act = slotKey.getState(v.state);
         if (act && act.from === slot.from) return false;
@@ -552,7 +629,7 @@ function mdEditor({ value = '', placeholder = '', maxLength = 50000, onChange, s
           decos.push(MK.Decoration.widget(l.from, () => h('span.lk-ic', { title: '' }, icon(LINK_TYPE_ICON[info.type], 13)), { side: -1, key: 'lk:' + info.type + (loading ? ':w' : '') }));
           if (loading) decos.push(MK.Decoration.inline(l.from, l.to, { class: 'lk-wait' }));
         }
-        decos.push(...findSlots(state.doc).filter((s) => !act || s.to <= act.from || s.from >= act.to).map((s) => MK.Decoration.inline(s.from, s.to, { class: 'slot' })));
+        decos.push(...slotsOf(state.doc).filter((s) => !act || s.to <= act.from || s.from >= act.to).map((s) => MK.Decoration.inline(s.from, s.to, { class: 'slot' })));
         if (act) decos.push(act.from < act.to ? MK.Decoration.inline(act.from, act.to, { class: 'slot-edit' }) : MK.Decoration.widget(act.from, () => h('span.slot-edit.empty'), { side: 1 }));
         const first = state.doc.firstChild;
         if (placeholder && state.doc.childCount === 1 && first && first.type.name === 'paragraph' && !first.content.size) {
@@ -569,11 +646,13 @@ function mdEditor({ value = '', placeholder = '', maxLength = 50000, onChange, s
       ctx.set(MK.defaultValueCtx, current);
       ctx.update(MK.editorViewOptionsCtx, (o) => ({ ...o, attributes: { class: 'prose', spellcheck: 'false' },
         // 页面顶上有站点的固定头、底下有吸底的步骤栏：光标滚进视口时要让开它们，不然换行换到底栏后面就看不见了
-        scrollMargin: { top: 84, bottom: 112, left: 5, right: 5 }, scrollThreshold: { top: 84, bottom: 112, left: 0, right: 0 } }));
+        scrollMargin: { ...scrollMargin, left: 5, right: 5 }, scrollThreshold: { ...scrollMargin, left: 0, right: 0 } }));
       ctx.update(MK.remarkStringifyOptionsCtx, (o) => ({ ...o, bullet: '-', handlers: { ...(o.handlers || {}), break: () => '  \n' } }));
       ctx.get(MK.listenerCtx).markdownUpdated((_, text) => emit(text));
     })
-    .use(MK.commonmark).use(MK.gfm).use(MK.history).use(MK.listener).use(MK.clipboard).use(MK.trailing).use(helper)
+        // 空段落别导出成 `<br />`（站点会原样显示这串字）：装配前把这条规则从 commonmark 里滤掉，空段落直接丢掉。
+    // 不用 editor.remove()：它是异步的（返回 Promise），接在链上会断掉 .create()
+    .use(MK.commonmark.filter((p) => ![].concat(MK.remarkPreserveEmptyLinePlugin).includes(p))).use(MK.gfm).use(MK.history).use(MK.listener).use(MK.clipboard).use(MK.trailing).use(helper)
     .create()
     .then((editor) => {
       if (destroyed) { editor.destroy(); return; }
@@ -590,10 +669,36 @@ function mdEditor({ value = '', placeholder = '', maxLength = 50000, onChange, s
     /** 进入第一个填空位；没有填空（或编辑器还没起来）返回 false。 */
     focusFirstSlot() {
       if (!view) return false;
-      const first = findSlots(view.state.doc)[0];
+      const first = slotsOf(view.state.doc)[0];
       if (first) activate(view, first);
       return !!first;
     },
+    /** 还没填的填空位个数（正在填、还没改动的那一格也算）。 */
+    slotCount: () => (view ? slotsOf(view.state.doc).length : 0),
+    /** 正在填的那一格：{ label, pending }，pending = 还是原来的 {名字} 没改；没有在填返回 null。 */
+    activeSlot() {
+      if (view) fixPending(view);
+      const a = view && slotKey.getState(view.state);
+      if (!a) return null;
+      return { label: a.label, pending: /^\{[^{}\n]{1,24}\}$/.test(view.state.doc.textBetween(a.from, a.to)) };
+    },
+    /** 跳到当前这格（或光标）后面的下一个填空，不回绕；没有返回 false。 */
+    nextSlot() {
+      if (!view) return false;
+      fixPending(view);
+      const a = slotKey.getState(view.state);
+      const next = slotsOf(view.state.doc).find((x) => x.from >= (a ? a.to : view.state.selection.to));
+      if (next) activate(view, next);
+      return !!next;
+    },
+    /** 这一格算填完，光标停在它后面。 */
+    finishSlot() { if (view) { fixPending(view); finish(view, true); } },
+    /** 整格删掉（不需要的空），光标留在原处。 */
+    clearSlot() {
+      const a = view && slotKey.getState(view.state);
+      if (a) view.dispatch(view.state.tr.delete(a.from, a.to).setMeta(slotKey, null));
+    },
+    blur() { if (view) view.dom.blur(); },
     /** 把还在防抖里的修改立刻交出去。 */
     commit() { if (ed) emit(ed.action(MK.getMarkdown())); },
     destroy() { api.commit(); destroyed = true; closeMention(); tip.remove(); if (makerPop) makerPop.close(); if (ed) ed.destroy(); ed = view = null; },

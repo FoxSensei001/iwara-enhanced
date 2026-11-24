@@ -1,6 +1,27 @@
 // 模板：标题格式（可带 {填空}，{#} 是自动递增的期数）+ 简介 + 标签 + 分级与可见范围。
 // 任何一步都能套用；发布前后都能把当前这份存成模板。
 
+// 内置示例模板的文案（defineStrings 是 88-site.js 里的函数声明，会提升，这里加载时就能用）
+defineStrings({
+  tplMmdName: 'MMD 舞蹈', tplMmdTitle: '【MMD】{角色} - {曲名}',
+  tplMmdBody: '## Credits\n\n- **Model**：{模型}\n- **Motion**：{动作}\n- **Music**：{曲名}\n- **Stage**：{场景}',
+  tplSeriesName: '系列连载', tplSeriesTitle: '{系列名} #{#} {本期标题}', tplSeriesBody: '上一期：{上一期链接}',
+  tplHmvTitle: '{标题} [HMV]', tplHmvBody: '**Music**：{曲名}\n\n**Source**：{素材来源}',
+  tplModName: '游戏 MOD', tplModTitle: '【{作品}】{曲名}（{角色}）',
+}, {
+  tplMmdName: 'MMD dance', tplMmdTitle: '[MMD] {Character} - {Song}',
+  tplMmdBody: '## Credits\n\n- **Model**: {Model}\n- **Motion**: {Motion}\n- **Music**: {Song}\n- **Stage**: {Stage}',
+  tplSeriesName: 'Series', tplSeriesTitle: '{Series} #{#} {Episode title}', tplSeriesBody: 'Previous: {Previous link}',
+  tplHmvTitle: '{Title} [HMV]', tplHmvBody: '**Music**: {Song}\n\n**Source**: {Source}',
+  tplModName: 'Game mod', tplModTitle: '[{Game}] {Song} ({Characters})',
+}, {
+  tplMmdName: 'MMDダンス', tplMmdTitle: '【MMD】{キャラ} - {曲名}',
+  tplMmdBody: '## Credits\n\n- **Model**：{モデル}\n- **Motion**：{モーション}\n- **Music**：{曲名}\n- **Stage**：{ステージ}',
+  tplSeriesName: 'シリーズ', tplSeriesTitle: '{シリーズ名} #{#} {今回のタイトル}', tplSeriesBody: '前回：{前回のリンク}',
+  tplHmvTitle: '{タイトル} [HMV]', tplHmvBody: '**Music**：{曲名}\n\n**Source**：{素材の出典}',
+  tplModName: 'ゲームMOD', tplModTitle: '【{作品}】{曲名}（{キャラ}）',
+});
+
 const templates = {
   all: () => store.get('templates', []),
   save(list) { store.set('templates', list); },
@@ -22,16 +43,12 @@ const templates = {
   },
   /** 内置示例：从常见的投稿规律里归纳出来的四种写法。 */
   samples() {
-    const zh = env.lang === 'zh';
     const tg = (...ids) => ids.map((id) => tagDict.tag(id) || (svc.config.categories.find((c) => c.id === id) && { id, type: 'category', sensitive: false })).filter(Boolean);
     return [
-      { id: 's-mmd', sample: true, name: zh ? 'MMD 舞蹈' : 'MMD dance', title: zh ? '【MMD】{角色} - {曲名}' : '[MMD] {Character} - {Song}', rating: 'ecchi',
-        body: zh ? '## Credits\n\n- **Model**：{模型}\n- **Motion**：{动作}\n- **Music**：{曲名}\n- **Stage**：{场景}' : '## Credits\n\n- **Model**: {Model}\n- **Motion**: {Motion}\n- **Music**: {Song}\n- **Stage**: {Stage}', tags: tg('mikumikudance', 'dance') },
-      { id: 's-series', sample: true, name: zh ? '系列连载' : 'Series', title: zh ? '{系列名} #{#} {本期标题}' : '{Series} #{#} {Episode title}', counter: 0,
-        body: zh ? '上一期：{上一期链接}' : 'Previous: {Previous link}', tags: [] },
-      { id: 's-hmv', sample: true, name: 'HMV / PMV', title: zh ? '{标题} [HMV]' : '{Title} [HMV]', rating: 'ecchi',
-        body: zh ? '**Music**：{曲名}\n\n**Source**：{素材来源}' : '**Music**: {Song}\n\n**Source**: {Source}', tags: tg('hmv') },
-      { id: 's-mod', sample: true, name: zh ? '游戏 MOD' : 'Game mod', title: zh ? '【{作品}】{曲名}（{角色}）' : '[{Game}] {Song} ({Characters})', rating: 'ecchi', body: '', tags: tg('uncategorized', 'game_mod') },
+      { id: 's-mmd', sample: true, name: t('tplMmdName'), title: t('tplMmdTitle'), rating: 'ecchi', body: t('tplMmdBody'), tags: tg('mikumikudance', 'dance') },
+      { id: 's-series', sample: true, name: t('tplSeriesName'), title: t('tplSeriesTitle'), counter: 0, body: t('tplSeriesBody'), tags: [] },
+      { id: 's-hmv', sample: true, name: 'HMV / PMV', title: t('tplHmvTitle'), rating: 'ecchi', body: t('tplHmvBody'), tags: tg('hmv') },
+      { id: 's-mod', sample: true, name: t('tplModName'), title: t('tplModTitle'), rating: 'ecchi', body: '', tags: tg('uncategorized', 'game_mod') },
     ];
   },
   last: (kind) => store.get('last:' + kind),

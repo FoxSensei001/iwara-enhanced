@@ -106,33 +106,54 @@ function mdHelpDoc(L) {
   return out;
 }
 
+/** 帮助弹窗的文案（defineStrings 是 88-site.js 的函数声明，会提升）。 */
+defineStrings({
+  hpTitle: '帮助', hpNav1: '什么是填空', hpNav2: '怎么设置填空', hpNav3: '怎么填写', hpNav4: '多个填空怎么切换', hpFlow: '发布流程', hpSlots: '模板填空', hpEditor: '写简介', hpKeys: '快捷键',
+  hpFlow1: '发布拆成四步：上传 → 内容 → 标签 → 发布。顶部的步骤条可以随时点回去改；每一步都会自动存草稿，关掉页面再回来还在。',
+  hpFlow2: '用中文搜标签，站点上的英文标签会自动对上。用过的标签会留在下面，下次一点就加；不想再看到的可以移除。',
+  hpFlow3: '把常用的标题格式、简介、标签、分级存成模板，下次右上角「模板」一键套用，只需要填几个空。',
+  hpLink: '链接', hpLinkTxt: '打 [文字](网址) 时，打完右括号就变成链接；裸网址后面接一个空格就变成链接。贴进来的 Iwara 站内链接（视频、图片、用户、播放列表、论坛帖）会自动换成作品名。按住 ⌘ / Ctrl 点链接可以打开。',
+  hpMention: '提及', hpMentionTxt: '打 @ 加用户名会弹出用户列表，↑↓ 选择、回车确认。提及会显示成蓝色，按住 ⌘ / Ctrl 点它可以打开对方主页。',
+  hpFormat: '格式', hpFormatFail: '这次没能从站点读到官方的格式说明。可以在原版发布页编辑框旁点「格式」查看。',
+  hpKeysTxt: '这些按键在发布页里随时可用。弹窗、菜单开着或者输入法正在选词时不响应。还不能进下一步时（比如填空没填完、发布条件没满足），按钮会抖一下并提示卡在哪。',
+  hpKey1: '下一步（没在输入时）', hpKey2: '上一步（没在输入时）', hpKey3: '下一步 / 发布（输入时也能用）', hpKey4: '上一步（输入时也能用）', hpKey5: '跳到下一个填空', hpKey6: '这一格填完', hpKey7: '空填空里：退出；填空后面：整个删掉', hpKey8: '关闭弹窗、菜单', hpKey9: '提及用户',
+  hpPrev: '上一页', hpNext: '下一页', hpClose: '关闭',
+  hpDemoMd: '[示例](https://example.com)', hpDemoLinkText: '示例', hpDemoFetching: '正在取作品名…', hpDemoTitle: '【MMD】初音未来 - Gimme×Gimme', hpDemoCmd: '（⌘ 点击打开主页）',
+}, {
+  hpTitle: 'Help', hpNav1: 'What a blank is', hpNav2: 'Set up a blank', hpNav3: 'Fill in a blank', hpNav4: 'Switch between blanks', hpFlow: 'Publishing', hpSlots: 'Template blanks', hpEditor: 'Description', hpKeys: 'Shortcuts',
+  hpFlow1: 'Publishing takes four steps: upload → content → tags → publish. Click the stepper to go back at any time; drafts save automatically.',
+  hpFlow2: 'Search tags in your own language and they map to the site’s tags. Tags you used stay below for one-click reuse; remove the ones you don’t want.',
+  hpFlow3: 'Save your usual title pattern, description, tags and rating as a template, then apply it from “Templates” and just fill in the blanks.',
+  hpLink: 'Links', hpLinkTxt: 'Typing [text](url) turns into a link as soon as you close the parenthesis; a bare URL becomes a link once you type a space after it. Iwara links (videos, images, users, playlists, forum threads) are replaced with their titles. ⌘/Ctrl-click to open.',
+  hpMention: 'Mentions', hpMentionTxt: 'Type @ and a name to pick a user — ↑↓ to choose, Enter to confirm. Mentions turn blue; ⌘/Ctrl-click opens their profile.',
+  hpFormat: 'Formatting', hpFormatFail: 'Couldn’t read the site’s formatting guide this time. Open the original upload page and click “Formatting” next to the editor.',
+  hpKeysTxt: 'These keys work anywhere on the publish page, except while a dialog or menu is open or an input method is composing. If you can’t move on yet, the button shakes and tells you what’s missing.',
+  hpKey1: 'Next step (when not typing)', hpKey2: 'Previous step (when not typing)', hpKey3: 'Next / publish (works while typing)', hpKey4: 'Previous step (works while typing)', hpKey5: 'Next blank', hpKey6: 'Done with this blank', hpKey7: 'Leave an empty blank; delete a blank right before the cursor', hpKey8: 'Close dialogs and menus', hpKey9: 'Mention a user',
+  hpPrev: 'Previous', hpNext: 'Next', hpClose: 'Close',
+  hpDemoMd: '[Example](https://example.com)', hpDemoLinkText: 'Example', hpDemoFetching: 'Fetching title…', hpDemoTitle: 'Miku - Gimme×Gimme', hpDemoCmd: '(⌘-click to open)',
+}, {
+  hpTitle: 'ヘルプ', hpNav1: '空欄とは', hpNav2: '空欄の作り方', hpNav3: '空欄の埋め方', hpNav4: '複数の空欄の切り替え', hpFlow: '投稿の流れ', hpSlots: 'テンプレートの空欄', hpEditor: '説明の書き方', hpKeys: 'ショートカット',
+  hpFlow1: '投稿は「アップロード → 内容 → タグ → 投稿」の4ステップです。上のステップバーからいつでも戻って直せます。各ステップで下書きが自動保存されるので、ページを閉じても続きから再開できます。',
+  hpFlow2: '日本語でタグを検索すると、サイト上の英語タグに自動で対応します。使ったタグは下に残り、次回はワンクリックで追加できます。不要なタグは削除できます。',
+  hpFlow3: 'よく使うタイトル形式・説明・タグ・レーティングをテンプレートとして保存しておくと、次回は右上の「テンプレート」からワンクリックで適用でき、空欄を埋めるだけで済みます。',
+  hpLink: 'リンク', hpLinkTxt: '[テキスト](URL) と入力して右カッコを閉じると、リンクになります。URLだけを貼り付けた場合は、後ろにスペースを入れるとリンクになります。貼り付けたIwara内のリンク（動画・画像・ユーザー・プレイリスト・フォーラム投稿）は、作品名などに自動で置き換わります。⌘ / Ctrl を押しながらクリックすると開けます。',
+  hpMention: 'メンション', hpMentionTxt: '@ に続けてユーザー名を入力すると、ユーザー一覧が表示されます。↑↓で選んでEnterで確定します。メンションは青く表示され、⌘ / Ctrl を押しながらクリックすると相手のプロフィールを開けます。',
+  hpFormat: '書式', hpFormatFail: '今回はサイトの公式な書式の説明を読み込めませんでした。元の投稿ページのエディタ横にある「書式」から確認できます。',
+  hpKeysTxt: 'これらのキーは投稿ページでいつでも使えます。ダイアログやメニューが開いているときや、日本語入力（IME）で変換中のときは反応しません。まだ次へ進めない場合（空欄が未入力、投稿の条件が未達など）は、ボタンが揺れて原因を表示します。',
+  hpKey1: '次のステップ（入力中以外）', hpKey2: '前のステップ（入力中以外）', hpKey3: '次のステップ / 投稿（入力中も有効）', hpKey4: '前のステップ（入力中も有効）', hpKey5: '次の空欄へ', hpKey6: 'この空欄を完了', hpKey7: '空の空欄では抜ける。空欄の直後なら丸ごと削除', hpKey8: 'ダイアログやメニューを閉じる', hpKey9: 'ユーザーをメンション',
+  hpPrev: '前へ', hpNext: '次へ', hpClose: '閉じる',
+  hpDemoMd: '[例](https://example.com)', hpDemoLinkText: '例', hpDemoFetching: '作品名を取得中…', hpDemoTitle: '【MMD】初音ミク - Gimme×Gimme', hpDemoCmd: '（⌘クリックでプロフィールを開く）',
+});
+
 function helpPages() {
-  const zh = env.lang === 'zh';
-  const L = zh
-    ? {
-      title: '帮助', slotNav: ['填空是什么', '做一个填空', '填一个空', '在填空之间切换'], flow: '发布流程', slots: '填空', editor: '写简介', keys: '快捷键',
-      flow1: '发布拆成四步：上传 → 内容 → 标签 → 发布。顶部的步骤条可以随时点回去改；每一步都会自动存草稿，关掉页面再回来还在。',
-      flow2: '用中文搜标签，站点上的英文标签会自动对上。用过的标签会留在下面，下次一点就加；不想再看到的可以移除。',
-      flow3: '把常用的标题格式、简介、标签、分级存成模板，下次右上角「模板」一键套用，只需要填几个空。',
-      link: '链接', linkTxt: '打 [文字](网址) 时，打完右括号就变成链接；裸网址后面接一个空格就变成链接。贴进来的 Iwara 站内链接（视频、图片、用户、播放列表、论坛帖）会自动换成作品名。按住 ⌘ / Ctrl 点链接可以打开。',
-      mention: '提及', mentionTxt: '打 @ 加用户名会弹出用户列表，↑↓ 选择、回车确认。提及会显示成蓝色，按住 ⌘ / Ctrl 点它可以打开对方主页。',
-      format: '格式', formatFail: '这次没能从站点读到官方的格式说明。可以在原版发布页编辑框旁点「格式」查看。',
-      keysTxt: '这些按键在发布页里随时可用。弹窗、菜单开着或者输入法正在选词时不响应。还不能进下一步时（比如填空没填完、发布条件没满足），按钮会抖一下并提示卡在哪。',
-      keyList: [[['→'], '下一步（没在输入时）'], [['←'], '上一步（没在输入时）'], [['⌘', '↵'], '下一步 / 发布（输入时也能用）'], [['⌘', '⇧', '↵'], '上一步（输入时也能用）'], [['Tab'], '跳到下一个填空'], [['↵'], '这一格填完'], [['⌫'], '空填空里：退出；填空后面：整个删掉'], [['Esc'], '关闭弹窗、菜单'], [['@'], '提及用户']],
-      prev: '上一页', next: '下一页', page: (a, b) => `${a} / ${b}`, close: '关闭',
-    }
-    : {
-      title: 'Help', slotNav: ['What blanks are', 'Make a blank', 'Fill a blank', 'Move between blanks'], flow: 'Publishing', slots: 'Blanks', editor: 'Description', keys: 'Shortcuts',
-      flow1: 'Publishing takes four steps: upload → content → tags → publish. Click the stepper to go back at any time; drafts save automatically.',
-      flow2: 'Search tags in your own language and they map to the site’s tags. Tags you used stay below for one-click reuse; remove the ones you don’t want.',
-      flow3: 'Save your usual title pattern, description, tags and rating as a template, then apply it from “Templates” and just fill in the blanks.',
-      link: 'Links', linkTxt: 'Typing [text](url) turns into a link as soon as you close the parenthesis; a bare URL becomes a link once you type a space after it. Iwara links (videos, images, users, playlists, forum threads) are replaced with their titles. ⌘/Ctrl-click to open.',
-      mention: 'Mentions', mentionTxt: 'Type @ and a name to pick a user — ↑↓ to choose, Enter to confirm. Mentions turn blue; ⌘/Ctrl-click opens their profile.',
-      format: 'Formatting', formatFail: 'Couldn’t read the site’s formatting guide this time. Open the original upload page and click “Formatting” next to the editor.',
-      keysTxt: 'These keys work anywhere on the publish page, except while a dialog or menu is open or an input method is composing. If you can’t move on yet, the button shakes and tells you what’s missing.',
-      keyList: [[['→'], 'Next step (when not typing)'], [['←'], 'Previous step (when not typing)'], [['⌘', '↵'], 'Next / publish (works while typing)'], [['⌘', '⇧', '↵'], 'Previous step (works while typing)'], [['Tab'], 'Next blank'], [['↵'], 'Done with this blank'], [['⌫'], 'Leave an empty blank; delete a blank right before the cursor'], [['Esc'], 'Close dialogs and menus'], [['@'], 'Mention a user']],
-      prev: 'Previous', next: 'Next', page: (a, b) => `${a} / ${b}`, close: 'Close',
-    };
+  const L = {
+    title: t('hpTitle'), slotNav: [t('hpNav1'), t('hpNav2'), t('hpNav3'), t('hpNav4')], flow: t('hpFlow'), slots: t('hpSlots'), editor: t('hpEditor'), keys: t('hpKeys'),
+    flow1: t('hpFlow1'), flow2: t('hpFlow2'), flow3: t('hpFlow3'),
+    link: t('hpLink'), linkTxt: t('hpLinkTxt'), mention: t('hpMention'), mentionTxt: t('hpMentionTxt'),
+    format: t('hpFormat'), formatFail: t('hpFormatFail'), keysTxt: t('hpKeysTxt'),
+    keyList: [[['→'], t('hpKey1')], [['←'], t('hpKey2')], [['⌘', '↵'], t('hpKey3')], [['⌘', '⇧', '↵'], t('hpKey4')], [['Tab'], t('hpKey5')], [['↵'], t('hpKey6')], [['⌫'], t('hpKey7')], [['Esc'], t('hpKey8')], [['@'], t('hpKey9')]],
+    prev: t('hpPrev'), next: t('hpNext'), page: (a, b) => `${a} / ${b}`, close: t('hpClose'),
+  };
   if (!navigator.platform.includes('Mac')) for (const row of L.keyList) row[0] = row[0].map((k) => (k === '⌘' ? 'Ctrl' : k));
   const demos = tourDemos();
   const slot = slotGuidePages();
@@ -147,17 +168,17 @@ function helpPages() {
     { key: 'slots', icon: 'sparkle', title: L.slots, pages: slot.pages.map((p, j) => ({ ...p, nav: L.slotNav[j] })) },
     { key: 'editor', icon: 'pencil', title: L.editor, pages: [
       { nav: L.link, title: L.link, text: L.linkTxt, build: () => h('div.h-demo',
-        pair(h('span.src', zh ? '[示例](https://example.com)' : '[Example](https://example.com)'), h('span.lk', zh ? '示例' : 'Example')),
-        pair(h('span.src', 'https://www.iwara.tv/video/…␣'), iwLink(zh ? '正在取作品名…' : 'Fetching title…', true)),
-        pair(h('span.src', 'https://www.iwara.tv/video/…'), iwLink(zh ? '【MMD】初音未来 - Gimme×Gimme' : 'Miku - Gimme×Gimme'))) },
+        pair(h('span.src', t('hpDemoMd')), h('span.lk', t('hpDemoLinkText'))),
+        pair(h('span.src', 'https://www.iwara.tv/video/…␣'), iwLink(t('hpDemoFetching'), true)),
+        pair(h('span.src', 'https://www.iwara.tv/video/…'), iwLink(t('hpDemoTitle')))) },
       { nav: L.mention, title: L.mention, text: L.mentionTxt, build: () => h('div.h-demo',
-        pair(h('span.src', '@exam'), h('span', h('span.lk', '@example_user'), ' ', h('span', { style: { color: 'var(--fg3)' } }, zh ? '（⌘ 点击打开主页）' : '(⌘-click to open)')))) },
+        pair(h('span.src', '@exam'), h('span', h('span.lk', '@example_user'), ' ', h('span', { style: { color: 'var(--fg3)' } }, t('hpDemoCmd'))))) },
       { key: 'format', nav: L.format, title: L.format, doc: () => mdHelpDoc(L) },
     ] },
     { key: 'keys', icon: 'grip', title: L.keys, pages: [
       { nav: L.keys, title: L.keys, text: L.keysTxt, build: () => h('div.h-keys', L.keyList.flatMap(([ks, v]) => [h('span.k', ks.map((k) => h('kbd', k))), h('span', v)])) },
     ] },
-  ];
+  ].filter((g) => !(g.key === 'keys' && matchMedia('(hover:none)').matches)); // 触屏没有实体键盘，快捷键页不放
   return { L, groups, slot };
 }
 
@@ -202,8 +223,11 @@ function showHelp({ at = 'flow', onClose } = {}) {
       root.getAnimations().forEach((a) => a.cancel());
     }
   }
-  const legend = () => h('div.g-legend',
-    h('span', h('kbd', 'Tab'), t('sgKeyTab')), h('span', h('kbd', '↵'), h('kbd', '→'), t('sgKeyDone')), h('span', h('kbd', '⌫'), t('sgKeyBack')));
+  // 触屏没有这些键：图例换成键盘上方填空条的三个按钮
+  const legend = () => (matchMedia('(hover:none)').matches
+    ? h('div.g-legend', h('span', h('kbd', t('sbNext')), t('sgTouchNext')), h('span', h('kbd', t('sbDelete')), t('sgTouchDel')), h('span', h('kbd', t('sbDone')), t('sgTouchDone')))
+    : h('div.g-legend',
+      h('span', h('kbd', 'Tab'), t('sgKeyTab')), h('span', h('kbd', '↵'), h('kbd', '→'), t('sgKeyDone')), h('span', h('kbd', '⌫'), t('sgKeyBack'))));
   function show(n, again) {
     const from = i;
     i = clamp(n, 0, pages.length - 1);

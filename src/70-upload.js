@@ -363,13 +363,14 @@ function uploadStepImage(ctx) {
         const veil = h('div.veil', h('div.spin'), bar);
         const no = h('span.no.mono');
         const ph = h('div.veil', { style: { background: 'none', color: 'var(--fg3)' } }, icon('film', 28));
-        const el = h('div.imgc', { draggable: true }, ph, no, veil,
+        const el = h('div.imgc', { draggable: !matchMedia('(hover:none)').matches }, ph, no, veil,
           h('button.rm', { type: 'button', onclick: () => images.remove(item) }, icon('x', 14)));
         el.addEventListener('dragstart', (e) => { dragging = item; el.classList.add('drag'); e.dataTransfer.effectAllowed = 'move'; });
         el.addEventListener('dragend', () => { dragging = null; el.classList.remove('drag'); grid.querySelectorAll('.target').forEach((x) => x.classList.remove('target')); });
         el.addEventListener('dragover', (e) => { if (dragging && dragging !== item) { e.preventDefault(); el.classList.add('target'); } });
         el.addEventListener('dragleave', () => el.classList.remove('target'));
         el.addEventListener('drop', (e) => { e.preventDefault(); if (dragging && dragging !== item) flip(() => images.move(images.items.indexOf(dragging), images.items.indexOf(item))); });
+        touchReorder(el, item);
         c = { el, bar, veil, no, ph, url: null };
         cells.set(item.key, c);
       }
@@ -380,10 +381,59 @@ function uploadStepImage(ctx) {
       c.veil.style.opacity = item.file ? 0 : 1;
       c.veil.style.pointerEvents = 'none';
       c.el.classList.toggle('err', !!item.error);
-      c.el.title = item.error ? t('errUpload') + (item.errorText ? (env.lang === 'zh' ? '：' : ': ') + item.errorText : '') : '';
+      c.el.title = item.error ? t('errUpload') + (item.errorText ? sepColon() + item.errorText : '') : '';
       if (item.error) clear(c.veil).append(icon('warn', 22));
       if (grid.children[i] !== c.el) grid.insertBefore(c.el, grid.children[i] || null);
     });
+  }
+  /**
+   * 触屏排序：HTML 拖放在手机浏览器上靠不住。长按 350ms 拿起格子，跟手移动，松手落到手指下那一格；
+   * 长按前手指一动就算滚动页面，不拿起。
+   */
+  function touchReorder(el, item) {
+    let timer = 0, sx = 0, sy = 0, lifted = false, over = null, id = null;
+    // 拿起后拦住页面滚动（pointer 事件拦不住，要在 touchmove 上 preventDefault）
+    const block = (e) => { if (lifted) e.preventDefault(); };
+    const move = (e) => {
+      if (e.pointerId !== id) return;
+      if (!lifted) { if (Math.hypot(e.clientX - sx, e.clientY - sy) > 8) clean(); return; }
+      el.style.transform = `translate(${e.clientX - sx}px,${e.clientY - sy}px) scale(1.04)`;
+      el.style.pointerEvents = 'none';
+      const hit = ui.root.elementFromPoint(e.clientX, e.clientY);
+      el.style.pointerEvents = '';
+      const cell = hit && hit.closest && hit.closest('.imgc');
+      const next = cell && cell !== el && grid.contains(cell) ? cell : null;
+      if (next !== over) { if (over) over.classList.remove('target'); over = next; if (over) over.classList.add('target'); }
+    };
+    const up = (e) => {
+      if (e.pointerId !== id) return;
+      const target = lifted && over && [...cells].find(([, c]) => c.el === over);
+      clean();
+      const other = target && images.items.find((x) => x.key === target[0]);
+      if (other) flip(() => images.move(images.items.indexOf(item), images.items.indexOf(other)));
+    };
+    const cancel = (e) => { if (e.pointerId === id) clean(); };
+    // 手势期间才挂全局监听，松手即摘，格子删掉也不留残余
+    function clean() {
+      clearTimeout(timer); timer = 0;
+      if (lifted) { el.classList.remove('drag'); el.style.transform = ''; el.style.zIndex = ''; if (over) over.classList.remove('target'); }
+      lifted = false; over = null; id = null;
+      removeEventListener('touchmove', block, { capture: true });
+      removeEventListener('pointermove', move);
+      removeEventListener('pointerup', up);
+      removeEventListener('pointercancel', cancel);
+    }
+    el.addEventListener('pointerdown', (e) => {
+      if (e.pointerType !== 'touch' || e.target.closest('.rm')) return;
+      clean();
+      id = e.pointerId; sx = e.clientX; sy = e.clientY;
+      addEventListener('touchmove', block, { passive: false, capture: true });
+      addEventListener('pointermove', move);
+      addEventListener('pointerup', up);
+      addEventListener('pointercancel', cancel);
+      timer = setTimeout(() => { timer = 0; lifted = true; el.classList.add('drag'); el.style.zIndex = '3'; navigator.vibrate && navigator.vibrate(12); }, 350);
+    });
+    el.addEventListener('contextmenu', (e) => { if (timer || lifted) e.preventDefault(); });
   }
   /** 排序时让其余格子滑到新位置。 */
   function flip(mutate) {
@@ -411,7 +461,7 @@ function uploadStepImage(ctx) {
     panel.update([
       { key: 'fmt', icon: 'picture', label: t('fFormat'), value: has ? Object.entries(counts).map(([k, n]) => `${k} ×${n}`).join(' · ') : null, hint: imgFmtHint() + (badType.length ? ' — ' + t('fRejected', { n: badType.length }) + badType.map((x) => x.name).join('、') : ''), status: badType.length ? 'no' : has ? 'ok' : null },
       { key: 'size', icon: 'file', label: t('fSize'), value: has && biggest ? t('fBiggest', { n: fmtSize(biggest) }) : null, hint: imgSizeHint() + (badSize.length ? ' — ' + t('fRejected', { n: badSize.length }) + badSize.map((x) => x.name).join('、') : ''), status: badSize.length ? 'no' : has ? 'ok' : null },
-      { key: 'count', icon: 'layers', label: t('fCount'), value: has ? String(items.length) : null, hint: t('fImgOrder'), status: null },
+      { key: 'count', icon: 'layers', label: t('fCount'), value: has ? String(items.length) : null, hint: t(matchMedia('(hover:none)').matches ? 'fImgOrderTouch' : 'fImgOrder'), status: null },
     ]);
   }
   const off = ctx.bus.on('images', (it) => { draw(it); if (!it) drawPanel(); });
@@ -527,7 +577,7 @@ function videoCheckRows(facts) {
     { key: 'res', icon: 'maximize', label: t('fRes'), value: has && f.width ? `${f.width}×${f.height}` : null, hint: R.minW ? `≥ ${R.minW}×${R.minH}` : '', status: st(R.minW, fails.includes('resolution')) },
     { key: 'dur', icon: 'clock', label: t('fDur'), value: has && f.duration ? fmtDuration(f.duration) : null, hint: R.minDur ? t('fDurHint', { n: R.minDur }) : '', status: st(R.minDur, fails.includes('duration')) },
     { key: 'rate', icon: 'gauge', label: t('fRate'), value: kbps != null ? `${kbps} kb/s` + (f.fps ? ` · ${f.fps} FPS` : '') : null,
-      hint: !B ? '' : has && row && kbps != null ? t('fRateLimit', { p: row[0], n: cap != null ? cap : caps.join(' / '), fps: cap != null ? B.fps[col] + ' FPS' : B.fps.map((x) => x + '').join(' / ') + ' FPS' }) : t('fRateHint'),
+      hint: !B ? '' : has && row && kbps != null ? t('fRateLimit', { p: row[0], n: cap != null ? cap : caps.join(' / '), fps: cap != null ? B.fps[col] + ' FPS' : B.fps.map((x) => x + '').join(' / ') + ' FPS' }) : t(matchMedia('(hover:none)').matches ? 'fRateHintTouch' : 'fRateHint'),
       more: B ? bitrateTable(B, has && row ? row[0] : null) : null,
       status: !B ? null : has && kbps != null ? (over || maybe ? 'warn' : 'ok') : has ? 'wait' : null, statusText: maybe ? t('fMaybe', { n: B.fps[B.fps.length - 1] }) : null },
   ];

@@ -72,8 +72,9 @@ const studio = (() => {
       sync();
     },
     reload() { currentKey = null; sync(); },
-    /** 右上角「…」菜单；extra 是当前页面自己的条目，放在最前面。 */
+    /** 右上角「…」菜单；extra 是当前页面自己的条目，放在最前面。页面没给「帮助」就补一条通用的（内容管理页等），每个接管页都有帮助入口。 */
     menu(anchor, extra = []) {
+      if (!extra.some((it) => it && it.icon === 'help')) extra = [{ icon: 'help', label: t('help'), onclick: () => showHelp({ at: 'flow' }) }, ...extra];
       menu(anchor, [
         ...extra,
         extra.length && '-',
@@ -138,4 +139,7 @@ const studio = (() => {
   return { start, app };
 })();
 
-studio.start();
+// document-start 时页面还没有 body：等 DOM 就绪再启动界面（siteData 的请求旁听在加载时就已装好）
+const bootAll = () => { initVendor(); studio.start(); site.start(); };
+if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', bootAll, { once: true });
+else bootAll();
