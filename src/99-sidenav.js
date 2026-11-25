@@ -346,7 +346,7 @@
           was = on;
         }).observe(menu, { attributes: true, attributeFilter: ['class'] });
       }
-      if (localStorage.getItem('token')) ensureSubsItem(menu);
+      if (api.signedIn()) ensureSubsItem(menu); else menu.querySelectorAll('li[data-iwe-nav-subs]').forEach((li) => li.remove()); // 令牌失效（站点换令牌被拒）后撤掉
       const iw = ensureIwaraItem(menu);
       if (iw && !iw.dataset.iweNav) bindRow(iw, 'iwara');
       for (const [href] of Object.entries(MODEL)) {

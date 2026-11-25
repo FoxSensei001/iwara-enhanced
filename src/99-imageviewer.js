@@ -53,7 +53,7 @@ let iweImageViewer = null;
 
   async function filesFor(id) {
     if (cache.has(id)) return cache.get(id);
-    const r = await api.call(`/image/${id}`);
+    const r = await api.call(`/image/${id}`, { auth: 'auto' });
     const files = (r && r.files) || [];
     cache.set(id, files);
     return files;

@@ -87,7 +87,6 @@
   const thumbOf = (it, isImg) => F().thumbOf(it, isImg), jpgOf = (k, f) => F().jpgOf(k, f), setText = (el, tx) => F().setText(el, tx);
   const reduced = () => matchMedia('(prefers-reduced-motion: reduce)').matches;
   const abs = (u) => (u && u.startsWith('//') ? 'https:' + u : u || '');
-  const loggedIn = () => !!localStorage.getItem('token');
   const fullDate = (iso) => { const d = new Date(iso); return isFinite(d) ? d.toLocaleString(localStorage.getItem('locale') || navigator.language, { dateStyle: 'medium', timeStyle: 'short' }) : ''; };
   // 标签名：走词库（50-tags.js 的 tagDict）译成界面语言，与「按标签过滤」的「显示原名」设置一致；没有译名就用原 id
   const tagName = (id) => {
@@ -221,8 +220,7 @@
     const path = `/${s.ref.kind}/${s.ref.id}`;
     try {
       let d;
-      try { d = await api.call(path, { auth: loggedIn() }); }
-      catch (e) { if (e && e.status === 401) d = await api.call(path, { auth: false }); else throw e; }
+      d = await api.call(path, { auth: 'auto' });
       details.set(s.key, d);
       if (s.closed) return;
       s.detail = d;
@@ -521,7 +519,7 @@
 
   async function toggleLike(s, btn) {
     if (s.likeBusy || !s.detail) return;
-    if (!loggedIn()) { flashTip(btn, t('cpLogin')); return; }
+    if (!api.signedIn()) { flashTip(btn, t('cpLogin')); return; }
     const want = !s.liked;
     s.likeBusy = true;
     const before = [s.liked, s.likeCount];

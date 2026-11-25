@@ -116,7 +116,7 @@ let iweHomeKit = null;
           const u = o.request();
           const limit = parseInt(u.searchParams.get('limit') || '12', 10) || 12;
           u.searchParams.set('page', String(n - 1));
-          const json = await api.call(u.pathname + u.search, { auth: !!localStorage.getItem('token') });
+          const json = await api.call(u.pathname + u.search, { auth: 'auto' });
           rows = iwePagerKit.items(json) || [];
           hasNext = rows.length >= limit;
         }

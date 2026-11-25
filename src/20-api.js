@@ -42,19 +42,28 @@ function srvText(key, values) {
 
 const api = (() => {
   let access = null;
+  let accessFor = null; // 这个访问令牌是用哪个刷新令牌换来的：登出 / 换账号后 localStorage.token 变了，缓存跟着作废（否则登出后还以旧账号身份请求）
   let accessExp = 0;
   let pending = null;
+  // 被服务端拒掉的刷新令牌（过期 / 失效，换令牌回 401 / 403）。站点自己换不到就按未登录显示页面，但不会把它从 localStorage 删掉，
+  // 所以「本地有 token」≠「已登录」。记下来：之后不再拿它去换（每次都撞一次 403），按未登录处理；用户重新登录后 token 变了自然失效
+  let dead = null;
+  const markDead = (refresh) => { if (!refresh) return; dead = refresh; if (accessFor === refresh) { access = null; accessExp = 0; } };
+  /** 是否已登录（本地有刷新令牌、且没被服务端拒过）。界面上「登录了才显示 / 才能点」的判断都用它，不要自己读 localStorage.token */
+  const signedIn = () => { const r = localStorage.getItem('token'); return !!r && r !== dead; };
 
   async function token() {
-    if (access && Date.now() < accessExp) return access;
-    if (pending) return pending;
     const refresh = localStorage.getItem('token');
-    if (!refresh) throw new ApiError(401, { message: 'login' });
+    if (access && accessFor === refresh && Date.now() < accessExp) return access;
+    if (pending) return pending;
+    if (!refresh || refresh === dead) throw new ApiError(401, { message: 'login' });
     pending = (async () => {
       const r = await fetch(API + '/user/token', { method: 'POST', headers: { Authorization: 'Bearer ' + refresh, 'X-Site': location.hostname } });
       const j = await r.json().catch(() => ({}));
+      if (r.status === 401 || r.status === 403) markDead(refresh);
       if (!r.ok || !j.accessToken) throw new ApiError(r.status || 401, { message: 'login' });
       access = j.accessToken;
+      accessFor = refresh;
       try {
         accessExp = JSON.parse(atob(access.split('.')[1].replace(/-/g, '+').replace(/_/g, '/'))).exp * 1000 - 60000;
       } catch {
@@ -65,15 +74,26 @@ const api = (() => {
     try { return await pending; } finally { pending = null; }
   }
 
+  /**
+   * auth：true = 必须登录（创作工作台、写操作）；false = 匿名；
+   * 'auto' = 读公开数据时和站点一样：已登录就带上（看得到私有 / 关注关系等），没登录或令牌失效就匿名请求，不报登录错误。
+   */
   async function call(path, { method = 'GET', body, host = API, auth = true } = {}) {
     // 与当前页面域名一致：主站（www.iwara.tv / iwara.tv）和 AI 站（www.iwara.ai / iwara.ai）是同一套前端、同一个 api.iwara.tv，
     // 只靠这个头区分站点（站点自己的请求封装也是：发往 api.iwara.tv 的一律带，发往 files.iwara.tv 的上传不带）
     const headers = { 'X-Site': location.hostname };
-    if (auth) headers.Authorization = 'Bearer ' + (await token());
+    const auto = auth === 'auto' && method === 'GET';
+    if (auth) {
+      try { headers.Authorization = 'Bearer ' + (await token()); }
+      // 'auto'：确实没登录（没有令牌 / 令牌被拒）才匿名；换令牌临时失败（429 / 5xx）和网络错误照常抛，免得登录用户拿到匿名数据（订阅页翻出空列表）
+      catch (e) { if (!auto || !(e instanceof ApiError) || signedIn()) throw e; }
+    }
     if (body !== undefined) headers['Content-Type'] = 'application/json';
     if (host !== API) delete headers['X-Site'];
     const r = await fetch(host + path, { method, headers, body: body === undefined ? undefined : JSON.stringify(body), cache: 'no-store' });
     const data = r.status === 204 ? null : await r.json().catch(() => null);
+    // 'auto'：带着令牌反被拒（401，访问令牌已被作废）就清掉缓存、匿名再试一次；下次带登录的请求会重新换令牌
+    if (!r.ok && auto && r.status === 401 && headers.Authorization) { access = null; accessExp = 0; return call(path, { method, host, auth: false }); }
     if (!r.ok) throw new ApiError(r.status, data);
     return data;
   }
@@ -102,7 +122,7 @@ const api = (() => {
     return { promise, abort: () => xhr.abort() };
   }
 
-  return { call, upload, token };
+  return { call, upload, token, signedIn, markDead };
 })();
 
 // ── 业务接口 ─────────────────────────────────────────────────────────────

@@ -128,6 +128,8 @@ const siteData = (() => {
   // 站点自己的请求写的是不带协议的 `//api.iwara.tv/...`：两种都认，回调里统一给绝对地址
   const isApi = (u) => /^(https:)?\/\/api\.iwara\.tv\//.test(String(u || ''));
   const abs = (u) => (String(u).startsWith('//') ? 'https:' + u : String(u));
+  /** 请求头里 Authorization: Bearer 后面的值（fetch 的 init.headers 或 Request 自带的 headers）；取不到返回 null */
+  const bearerOf = (input, init) => { try { const m = /^Bearer\s+(.+)$/i.exec(new Headers((init && init.headers) || (input && input.headers) || undefined).get('Authorization') || ''); return m ? m[1] : null; } catch { return null; } };
   function walk(o, depth) {
     if (!o || typeof o !== 'object' || depth > 6) return;
     if (Array.isArray(o)) { for (const x of o) walk(x, depth + 1); return; }
@@ -172,6 +174,12 @@ const siteData = (() => {
     const p = origFetch.apply(this, arguments);
     const url = typeof input === 'string' ? input : input && input.url;
     if (method !== 'GET' && isApi(url)) writes(abs(url), method, p.then((r) => r.status, () => 0));
+    // 站点自己换令牌被拒（刷新令牌过期 / 失效）：站点会按未登录显示，但不删 localStorage.token。我们跟着记成失效（见 api.signedIn）
+    if (method === 'POST' && isApi(url) && /\/user\/token(\?|$)/.test(url)) {
+      // 记下被拒的是哪一个：以这次请求实际带的令牌为准（别的标签页可能已经换了 localStorage 里的令牌）
+      const rt = bearerOf(input, init) || localStorage.getItem('token'); // token-ok
+      p.then((r) => { if (r.status === 401 || r.status === 403) { api.markDead(rt); site.schedule(); } }, () => {});
+    }
     if (isApi(url)) p.then((r) => { if (r.ok && /json/.test(r.headers.get('content-type') || '')) r.clone().json().then((j) => feed(abs(url), j), () => {}); }, () => {});
     return p;
   };
@@ -223,7 +231,8 @@ const site = (() => {
       try { f.scan(c); } catch (e) { console.error('[iwe]', f.name, e); }
     }
   }
-  const schedule = () => { if (!queued) { queued = true; requestAnimationFrame(run); } };
+  // 启动前不扫描：页面可能还没有 body、样式还没插（start() 末尾会扫一次）
+  const schedule = () => { if (!started || queued) return; queued = true; requestAnimationFrame(run); };
 
   return {
     /**
@@ -258,6 +267,9 @@ body.dark [class^="iwe-"],body.dark [class*=" iwe-"]{--bg:#0a0a0a;--card:#111;--
 [data-iwe-fade="l r"]{-webkit-mask-image:linear-gradient(90deg,transparent,#000 32px,#000 calc(100% - 32px),transparent);mask-image:linear-gradient(90deg,transparent,#000 32px,#000 calc(100% - 32px),transparent)}`));
       // 站点没登录也要能用：界面语言先按站点自己的设置定
       if (!env.user) detectLang(localStorage.getItem('locale') || navigator.language);
+      // 本地有刷新令牌不等于已登录（过期的站点不删）。站点自己换令牌常在脚本注入前就发出去了（实测第 136ms），上面的钩子听不到结果：
+      // 这里自己换一次——成功就留着用（之后带登录的请求不用再换），被拒就记成失效并重扫（侧栏「订阅」等登录才有的东西撤掉）
+      if (api.signedIn()) api.token().catch(() => { if (!api.signedIn()) schedule(); });
       tagDict.load().then(schedule);
       new MutationObserver(schedule).observe(document.body, { childList: true, subtree: true, attributes: true, attributeFilter: ['class'] });
       addEventListener('popstate', schedule);

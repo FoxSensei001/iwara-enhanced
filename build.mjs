@@ -52,6 +52,14 @@ if (toasts.length) {
   process.exitCode = 1;
 }
 
+// 「是否已登录」只看 api.signedIn()：本地有刷新令牌不等于登录了（过期的令牌站点不删；详见 tool/check-login-state.mjs）
+const { checkLoginState } = await import('./tool/check-login-state.mjs');
+const tokenReads = checkLoginState(root);
+if (tokenReads.length) {
+  console.error(`\n⚠ 这些地方自己读了 localStorage.token 当登录判断（过期的令牌站点不会删；改用 api.signedIn()，读公开数据用 api.call(..., { auth: 'auto' })）：\n  ${tokenReads.join('\n  ')}\n`);
+  process.exitCode = 1;
+}
+
 // 界面文案三种语言（中文 / English / 日本語）齐不齐、有没有写死的中日文（详见 tool/check-i18n.mjs）
 const { checkI18n } = await import('./tool/check-i18n.mjs');
 const i18n = await checkI18n(root);

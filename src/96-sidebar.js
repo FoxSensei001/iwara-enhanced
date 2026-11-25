@@ -332,7 +332,7 @@ html.iwe-sb-quiet .page > .menu.menu--open{visibility:hidden}
         h('div.text.text--small', t('sb_by') + ' ', userLink(last.user))) : null));
   }
 
-  const fetchPage = (page) => api.call(`/forum/threads?page=${page}&limit=${PAGE_LIMIT}`, { auth: !!localStorage.getItem('token') });
+  const fetchPage = (page) => api.call(`/forum/threads?page=${page}&limit=${PAGE_LIMIT}`, { auth: 'auto' });
   // 加载中的骨架：与帖子行同样的版式，两条灰条带高光流动；整块淡入。加载完成后被真实行替换（真实行再依次淡入上移）
   const skeleton = () => h('div.iwe-skel-list', { 'aria-busy': 'true', role: 'status' },
     Array.from({ length: 8 }, (_, i) => h('div.iwe-skel-row', h('div.iwe-skel-line.w1', { style: { maxWidth: (46 + ((i * 17) % 30)) + '%' } }), h('div.iwe-skel-line.w2'))));

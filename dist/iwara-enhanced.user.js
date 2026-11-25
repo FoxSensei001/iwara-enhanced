@@ -433,19 +433,28 @@ function srvText(key, values) {
 
 const api = (() => {
   let access = null;
+  let accessFor = null; // 这个访问令牌是用哪个刷新令牌换来的：登出 / 换账号后 localStorage.token 变了，缓存跟着作废（否则登出后还以旧账号身份请求）
   let accessExp = 0;
   let pending = null;
+  // 被服务端拒掉的刷新令牌（过期 / 失效，换令牌回 401 / 403）。站点自己换不到就按未登录显示页面，但不会把它从 localStorage 删掉，
+  // 所以「本地有 token」≠「已登录」。记下来：之后不再拿它去换（每次都撞一次 403），按未登录处理；用户重新登录后 token 变了自然失效
+  let dead = null;
+  const markDead = (refresh) => { if (!refresh) return; dead = refresh; if (accessFor === refresh) { access = null; accessExp = 0; } };
+  /** 是否已登录（本地有刷新令牌、且没被服务端拒过）。界面上「登录了才显示 / 才能点」的判断都用它，不要自己读 localStorage.token */
+  const signedIn = () => { const r = localStorage.getItem('token'); return !!r && r !== dead; };
 
   async function token() {
-    if (access && Date.now() < accessExp) return access;
-    if (pending) return pending;
     const refresh = localStorage.getItem('token');
-    if (!refresh) throw new ApiError(401, { message: 'login' });
+    if (access && accessFor === refresh && Date.now() < accessExp) return access;
+    if (pending) return pending;
+    if (!refresh || refresh === dead) throw new ApiError(401, { message: 'login' });
     pending = (async () => {
       const r = await fetch(API + '/user/token', { method: 'POST', headers: { Authorization: 'Bearer ' + refresh, 'X-Site': location.hostname } });
       const j = await r.json().catch(() => ({}));
+      if (r.status === 401 || r.status === 403) markDead(refresh);
       if (!r.ok || !j.accessToken) throw new ApiError(r.status || 401, { message: 'login' });
       access = j.accessToken;
+      accessFor = refresh;
       try {
         accessExp = JSON.parse(atob(access.split('.')[1].replace(/-/g, '+').replace(/_/g, '/'))).exp * 1000 - 60000;
       } catch {
@@ -456,15 +465,26 @@ const api = (() => {
     try { return await pending; } finally { pending = null; }
   }
 
+  /**
+   * auth：true = 必须登录（创作工作台、写操作）；false = 匿名；
+   * 'auto' = 读公开数据时和站点一样：已登录就带上（看得到私有 / 关注关系等），没登录或令牌失效就匿名请求，不报登录错误。
+   */
   async function call(path, { method = 'GET', body, host = API, auth = true } = {}) {
     // 与当前页面域名一致：主站（www.iwara.tv / iwara.tv）和 AI 站（www.iwara.ai / iwara.ai）是同一套前端、同一个 api.iwara.tv，
     // 只靠这个头区分站点（站点自己的请求封装也是：发往 api.iwara.tv 的一律带，发往 files.iwara.tv 的上传不带）
     const headers = { 'X-Site': location.hostname };
-    if (auth) headers.Authorization = 'Bearer ' + (await token());
+    const auto = auth === 'auto' && method === 'GET';
+    if (auth) {
+      try { headers.Authorization = 'Bearer ' + (await token()); }
+      // 'auto'：确实没登录（没有令牌 / 令牌被拒）才匿名；换令牌临时失败（429 / 5xx）和网络错误照常抛，免得登录用户拿到匿名数据（订阅页翻出空列表）
+      catch (e) { if (!auto || !(e instanceof ApiError) || signedIn()) throw e; }
+    }
     if (body !== undefined) headers['Content-Type'] = 'application/json';
     if (host !== API) delete headers['X-Site'];
     const r = await fetch(host + path, { method, headers, body: body === undefined ? undefined : JSON.stringify(body), cache: 'no-store' });
     const data = r.status === 204 ? null : await r.json().catch(() => null);
+    // 'auto'：带着令牌反被拒（401，访问令牌已被作废）就清掉缓存、匿名再试一次；下次带登录的请求会重新换令牌
+    if (!r.ok && auto && r.status === 401 && headers.Authorization) { access = null; accessExp = 0; return call(path, { method, host, auth: false }); }
     if (!r.ok) throw new ApiError(r.status, data);
     return data;
   }
@@ -493,7 +513,7 @@ const api = (() => {
     return { promise, abort: () => xhr.abort() };
   }
 
-  return { call, upload, token };
+  return { call, upload, token, signedIn, markDead };
 })();
 
 // ── 业务接口 ─────────────────────────────────────────────────────────────
@@ -4915,6 +4935,8 @@ const siteData = (() => {
   // 站点自己的请求写的是不带协议的 `//api.iwara.tv/...`：两种都认，回调里统一给绝对地址
   const isApi = (u) => /^(https:)?\/\/api\.iwara\.tv\//.test(String(u || ''));
   const abs = (u) => (String(u).startsWith('//') ? 'https:' + u : String(u));
+  /** 请求头里 Authorization: Bearer 后面的值（fetch 的 init.headers 或 Request 自带的 headers）；取不到返回 null */
+  const bearerOf = (input, init) => { try { const m = /^Bearer\s+(.+)$/i.exec(new Headers((init && init.headers) || (input && input.headers) || undefined).get('Authorization') || ''); return m ? m[1] : null; } catch { return null; } };
   function walk(o, depth) {
     if (!o || typeof o !== 'object' || depth > 6) return;
     if (Array.isArray(o)) { for (const x of o) walk(x, depth + 1); return; }
@@ -4959,6 +4981,12 @@ const siteData = (() => {
     const p = origFetch.apply(this, arguments);
     const url = typeof input === 'string' ? input : input && input.url;
     if (method !== 'GET' && isApi(url)) writes(abs(url), method, p.then((r) => r.status, () => 0));
+    // 站点自己换令牌被拒（刷新令牌过期 / 失效）：站点会按未登录显示，但不删 localStorage.token。我们跟着记成失效（见 api.signedIn）
+    if (method === 'POST' && isApi(url) && /\/user\/token(\?|$)/.test(url)) {
+      // 记下被拒的是哪一个：以这次请求实际带的令牌为准（别的标签页可能已经换了 localStorage 里的令牌）
+      const rt = bearerOf(input, init) || localStorage.getItem('token'); // token-ok
+      p.then((r) => { if (r.status === 401 || r.status === 403) { api.markDead(rt); site.schedule(); } }, () => {});
+    }
     if (isApi(url)) p.then((r) => { if (r.ok && /json/.test(r.headers.get('content-type') || '')) r.clone().json().then((j) => feed(abs(url), j), () => {}); }, () => {});
     return p;
   };
@@ -5010,7 +5038,8 @@ const site = (() => {
       try { f.scan(c); } catch (e) { console.error('[iwe]', f.name, e); }
     }
   }
-  const schedule = () => { if (!queued) { queued = true; requestAnimationFrame(run); } };
+  // 启动前不扫描：页面可能还没有 body、样式还没插（start() 末尾会扫一次）
+  const schedule = () => { if (!started || queued) return; queued = true; requestAnimationFrame(run); };
 
   return {
     /**
@@ -5045,6 +5074,9 @@ body.dark [class^="iwe-"],body.dark [class*=" iwe-"]{--bg:#0a0a0a;--card:#111;--
 [data-iwe-fade="l r"]{-webkit-mask-image:linear-gradient(90deg,transparent,#000 32px,#000 calc(100% - 32px),transparent);mask-image:linear-gradient(90deg,transparent,#000 32px,#000 calc(100% - 32px),transparent)}`));
       // 站点没登录也要能用：界面语言先按站点自己的设置定
       if (!env.user) detectLang(localStorage.getItem('locale') || navigator.language);
+      // 本地有刷新令牌不等于已登录（过期的站点不删）。站点自己换令牌常在脚本注入前就发出去了（实测第 136ms），上面的钩子听不到结果：
+      // 这里自己换一次——成功就留着用（之后带登录的请求不用再换），被拒就记成失效并重扫（侧栏「订阅」等登录才有的东西撤掉）
+      if (api.signedIn()) api.token().catch(() => { if (!api.signedIn()) schedule(); });
       tagDict.load().then(schedule);
       new MutationObserver(schedule).observe(document.body, { childList: true, subtree: true, attributes: true, attributeFilter: ['class'] });
       addEventListener('popstate', schedule);
@@ -5319,7 +5351,7 @@ const studio = (() => {
     }
     if (backPill) { backPill.remove(); backPill = null; }
     if (!route) { if (host) unmount(); return; }
-    if (!localStorage.getItem('token')) return; // 未登录：交给原页面处理
+    if (!api.signedIn()) return; // 未登录（含令牌已失效）：交给原页面处理
     const section = document.querySelector('section.content');
     if (!section) return;
     if (key === currentKey && host && host.isConnected && section.contains(host)) return;
@@ -5352,7 +5384,7 @@ const studio = (() => {
       const section = document.querySelector('section.content');
       const lost = currentKey && (!host || !host.isConnected || !section || !section.contains(host));
       // 脚本启动时站点可能还没把页面渲染出来（没有内容区可挂）：只要该接管而还没接管，就一直重试
-      const pending = !currentKey && !off() && Date.now() >= retryAt && section && matchRoute(location.pathname) && localStorage.getItem('token');
+      const pending = !currentKey && !off() && Date.now() >= retryAt && section && matchRoute(location.pathname) && api.signedIn();
       if (location.pathname !== last || lost || pending) { last = location.pathname; if (lost) currentKey = null; sync(); }
       theme();
     };
@@ -6072,7 +6104,7 @@ function editorFor(f, S, changed, o = {}) {
       remove: (key) => { S().authors = S().authors.filter((a) => a.toLowerCase() !== key); changed('author', {}); },
       removeLast: () => { if (!S().authors.length) return false; S().authors.pop(); changed('author', {}); return true; },
       query: (q, done) => {
-        if (!localStorage.getItem('token')) { done([], t('search.author.login')); return; }
+        if (!api.signedIn()) { done([], t('search.author.login')); return; }
         done([], [h('span.iwe-sx-spin'), t('search.author.searching')]); // 这个接口常要 3–4 秒
         svc.searchUsers(q.replace(/^@/, '')).then((users) => {
           const taken = new Set(S().authors.map((a) => a.toLowerCase()));
@@ -7119,7 +7151,7 @@ async function loadMore(bar) {
   u.searchParams.set('page', String(wf.next));
   ownFetch.add(u.href);
   try {
-    const json = await api.call(u.pathname + u.search, { auth: !!localStorage.getItem('token') });
+    const json = await api.call(u.pathname + u.search, { auth: 'auto' });
     if (wf.key !== key) return; // 等待期间列表已经换了
     const list = listOf(bar.__iweAnchor);
     const rows = items(json) || [];
@@ -7609,7 +7641,7 @@ site.register('pager', {
       let userData = null;
 
       // /profile/{username} 返回 { user, header, body }，/user/{id} 返回 user 本身：统一取出 user
-      const res = req.userId ? await api.call(`/user/${req.userId}`) : req.username ? await api.call(`/profile/${req.username}`) : null;
+      const res = req.userId ? await api.call(`/user/${req.userId}`, { auth: 'auto' }) : req.username ? await api.call(`/profile/${req.username}`, { auth: 'auto' }) : null;
       userData = res && res.user ? res.user : res;
       if (userData) siteData.remember(userData);
 
@@ -8140,7 +8172,7 @@ async function buildQuote(quote) {
   let profile = siteData.user(quote.username);
   if (!profile) {
     try {
-      const data = await api.call('/profile/' + encodeURIComponent(quote.username));
+      const data = await api.call('/profile/' + encodeURIComponent(quote.username), { auth: 'auto' });
       profile = data?.user || { name: quote.username, username: quote.username };
     } catch {
       profile = { name: quote.username, username: quote.username };
@@ -8232,7 +8264,7 @@ async function threadLimit() {
   const key = m[1] + '/' + m[2];
   if (threadMeta && threadMeta.key === key) return threadMeta.limit;
   try {
-    const j = await api.call(`/forum/${key}?page=0`, { auth: !!localStorage.getItem('token') });
+    const j = await api.call(`/forum/${key}?page=0`, { auth: 'auto' });
     if (j && j.limit > 0) { threadMeta = { key, limit: j.limit }; return j.limit; }
   } catch { /* 拿不到就不翻页 */ }
   return 0;
@@ -8908,7 +8940,7 @@ html.iwe-sb-quiet .page > .menu.menu--open{visibility:hidden}
         h('div.text.text--small', t('sb_by') + ' ', userLink(last.user))) : null));
   }
 
-  const fetchPage = (page) => api.call(`/forum/threads?page=${page}&limit=${PAGE_LIMIT}`, { auth: !!localStorage.getItem('token') });
+  const fetchPage = (page) => api.call(`/forum/threads?page=${page}&limit=${PAGE_LIMIT}`, { auth: 'auto' });
   // 加载中的骨架：与帖子行同样的版式，两条灰条带高光流动；整块淡入。加载完成后被真实行替换（真实行再依次淡入上移）
   const skeleton = () => h('div.iwe-skel-list', { 'aria-busy': 'true', role: 'status' },
     Array.from({ length: 8 }, (_, i) => h('div.iwe-skel-row', h('div.iwe-skel-line.w1', { style: { maxWidth: (46 + ((i * 17) % 30)) + '%' } }), h('div.iwe-skel-line.w2'))));
@@ -10743,7 +10775,6 @@ label.iwe-rules:not(.iwe-rules-row *){margin:8px 0 0}
   const thumbOf = (it, isImg) => F().thumbOf(it, isImg), jpgOf = (k, f) => F().jpgOf(k, f), setText = (el, tx) => F().setText(el, tx);
   const reduced = () => matchMedia('(prefers-reduced-motion: reduce)').matches;
   const abs = (u) => (u && u.startsWith('//') ? 'https:' + u : u || '');
-  const loggedIn = () => !!localStorage.getItem('token');
   const fullDate = (iso) => { const d = new Date(iso); return isFinite(d) ? d.toLocaleString(localStorage.getItem('locale') || navigator.language, { dateStyle: 'medium', timeStyle: 'short' }) : ''; };
   // 标签名：走词库（50-tags.js 的 tagDict）译成界面语言，与「按标签过滤」的「显示原名」设置一致；没有译名就用原 id
   const tagName = (id) => {
@@ -10877,8 +10908,7 @@ label.iwe-rules:not(.iwe-rules-row *){margin:8px 0 0}
     const path = `/${s.ref.kind}/${s.ref.id}`;
     try {
       let d;
-      try { d = await api.call(path, { auth: loggedIn() }); }
-      catch (e) { if (e && e.status === 401) d = await api.call(path, { auth: false }); else throw e; }
+      d = await api.call(path, { auth: 'auto' });
       details.set(s.key, d);
       if (s.closed) return;
       s.detail = d;
@@ -11177,7 +11207,7 @@ label.iwe-rules:not(.iwe-rules-row *){margin:8px 0 0}
 
   async function toggleLike(s, btn) {
     if (s.likeBusy || !s.detail) return;
-    if (!loggedIn()) { flashTip(btn, t('cpLogin')); return; }
+    if (!api.signedIn()) { flashTip(btn, t('cpLogin')); return; }
     const want = !s.liked;
     s.likeBusy = true;
     const before = [s.liked, s.likeCount];
@@ -12166,7 +12196,7 @@ let iweHomeKit = null;
           const u = o.request();
           const limit = parseInt(u.searchParams.get('limit') || '12', 10) || 12;
           u.searchParams.set('page', String(n - 1));
-          const json = await api.call(u.pathname + u.search, { auth: !!localStorage.getItem('token') });
+          const json = await api.call(u.pathname + u.search, { auth: 'auto' });
           rows = iwePagerKit.items(json) || [];
           hasNext = rows.length >= limit;
         }
@@ -12626,7 +12656,7 @@ let iweImageViewer = null;
 
   async function filesFor(id) {
     if (cache.has(id)) return cache.get(id);
-    const r = await api.call(`/image/${id}`);
+    const r = await api.call(`/image/${id}`, { auth: 'auto' });
     const files = (r && r.files) || [];
     cache.set(id, files);
     return files;
@@ -14416,7 +14446,7 @@ let iweImageViewer = null;
           was = on;
         }).observe(menu, { attributes: true, attributeFilter: ['class'] });
       }
-      if (localStorage.getItem('token')) ensureSubsItem(menu);
+      if (api.signedIn()) ensureSubsItem(menu); else menu.querySelectorAll('li[data-iwe-nav-subs]').forEach((li) => li.remove()); // 令牌失效（站点换令牌被拒）后撤掉
       const iw = ensureIwaraItem(menu);
       if (iw && !iw.dataset.iweNav) bindRow(iw, 'iwara');
       for (const [href] of Object.entries(MODEL)) {

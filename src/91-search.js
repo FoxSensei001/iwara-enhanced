@@ -701,7 +701,7 @@ function editorFor(f, S, changed, o = {}) {
       remove: (key) => { S().authors = S().authors.filter((a) => a.toLowerCase() !== key); changed('author', {}); },
       removeLast: () => { if (!S().authors.length) return false; S().authors.pop(); changed('author', {}); return true; },
       query: (q, done) => {
-        if (!localStorage.getItem('token')) { done([], t('search.author.login')); return; }
+        if (!api.signedIn()) { done([], t('search.author.login')); return; }
         done([], [h('span.iwe-sx-spin'), t('search.author.searching')]); // 这个接口常要 3–4 秒
         svc.searchUsers(q.replace(/^@/, '')).then((users) => {
           const taken = new Set(S().authors.map((a) => a.toLowerCase()));

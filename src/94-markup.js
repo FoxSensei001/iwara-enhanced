@@ -78,7 +78,7 @@ async function buildQuote(quote) {
   let profile = siteData.user(quote.username);
   if (!profile) {
     try {
-      const data = await api.call('/profile/' + encodeURIComponent(quote.username));
+      const data = await api.call('/profile/' + encodeURIComponent(quote.username), { auth: 'auto' });
       profile = data?.user || { name: quote.username, username: quote.username };
     } catch {
       profile = { name: quote.username, username: quote.username };
@@ -170,7 +170,7 @@ async function threadLimit() {
   const key = m[1] + '/' + m[2];
   if (threadMeta && threadMeta.key === key) return threadMeta.limit;
   try {
-    const j = await api.call(`/forum/${key}?page=0`, { auth: !!localStorage.getItem('token') });
+    const j = await api.call(`/forum/${key}?page=0`, { auth: 'auto' });
     if (j && j.limit > 0) { threadMeta = { key, limit: j.limit }; return j.limit; }
   } catch { /* 拿不到就不翻页 */ }
   return 0;

@@ -284,7 +284,7 @@ async function loadMore(bar) {
   u.searchParams.set('page', String(wf.next));
   ownFetch.add(u.href);
   try {
-    const json = await api.call(u.pathname + u.search, { auth: !!localStorage.getItem('token') });
+    const json = await api.call(u.pathname + u.search, { auth: 'auto' });
     if (wf.key !== key) return; // 等待期间列表已经换了
     const list = listOf(bar.__iweAnchor);
     const rows = items(json) || [];

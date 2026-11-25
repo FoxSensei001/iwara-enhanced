@@ -95,7 +95,7 @@ const studio = (() => {
     }
     if (backPill) { backPill.remove(); backPill = null; }
     if (!route) { if (host) unmount(); return; }
-    if (!localStorage.getItem('token')) return; // 未登录：交给原页面处理
+    if (!api.signedIn()) return; // 未登录（含令牌已失效）：交给原页面处理
     const section = document.querySelector('section.content');
     if (!section) return;
     if (key === currentKey && host && host.isConnected && section.contains(host)) return;
@@ -128,7 +128,7 @@ const studio = (() => {
       const section = document.querySelector('section.content');
       const lost = currentKey && (!host || !host.isConnected || !section || !section.contains(host));
       // 脚本启动时站点可能还没把页面渲染出来（没有内容区可挂）：只要该接管而还没接管，就一直重试
-      const pending = !currentKey && !off() && Date.now() >= retryAt && section && matchRoute(location.pathname) && localStorage.getItem('token');
+      const pending = !currentKey && !off() && Date.now() >= retryAt && section && matchRoute(location.pathname) && api.signedIn();
       if (location.pathname !== last || lost || pending) { last = location.pathname; if (lost) currentKey = null; sync(); }
       theme();
     };

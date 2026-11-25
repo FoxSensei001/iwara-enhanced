@@ -147,7 +147,7 @@
       let userData = null;
 
       // /profile/{username} 返回 { user, header, body }，/user/{id} 返回 user 本身：统一取出 user
-      const res = req.userId ? await api.call(`/user/${req.userId}`) : req.username ? await api.call(`/profile/${req.username}`) : null;
+      const res = req.userId ? await api.call(`/user/${req.userId}`, { auth: 'auto' }) : req.username ? await api.call(`/profile/${req.username}`, { auth: 'auto' }) : null;
       userData = res && res.user ? res.user : res;
       if (userData) siteData.remember(userData);
 
