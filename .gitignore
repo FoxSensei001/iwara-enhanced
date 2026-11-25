@@ -2,3 +2,5 @@ node_modules/
 .DS_Store
 dist/dev-*
 dev/
+
+docs/screenshots/.raw/

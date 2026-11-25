@@ -2,7 +2,9 @@
 
 # Iwara Enhanced
 
-**为 Iwara 官网增强的非官方用户脚本，让内容创作和浏览更顺手。**
+**An unofficial userscript that makes iwara.tv nicer to browse and easier to publish on.**
+
+**English** · [简体中文](README.zh-CN.md) · [日本語](README.ja.md)
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 [![Tampermonkey](https://img.shields.io/badge/Tampermonkey%2FViolentmonkey-Compatible-brightgreen)](https://www.tampermonkey.net/)
@@ -10,167 +12,199 @@
 
 </div>
 
+<p align="center"><img src="docs/images/list.png" alt="Video list: original site vs. Iwara Enhanced" width="100%"></p>
+
 ---
 
-## 🌟 介绍
+## 🌟 About
 
-**Iwara Enhanced** 是一个为 iwara.tv 官方网站而设的社区用户脚本。它在保持原版页面完全可用的基础上，为内容创作者和浏览用户补充实用功能：更流畅的发布流程、更便利的内容管理和搜索体验。
+**Iwara Enhanced** is a community userscript for the official iwara.tv website. The original pages keep working exactly as before; the script adds what creators and viewers keep reaching for: a smoother publishing flow, easier content management, and better search and browsing.
 
 > [!NOTE]
-> 这是一个非官方社区项目，与 Iwara 官方无任何关联。
+> This is an unofficial community project and is not affiliated with Iwara.
 
 > [!IMPORTANT]
-> **使用规则** — 请遵守 Iwara 的网站规则和内容政策。任何规则违反（如上传测试内容、未完成作品等）可能导致账户警告或限制。
+> **Play by the rules** — follow Iwara's site rules and content policy. Breaking them (for example by uploading test or unfinished content) can get your account warned or restricted.
 
-## ✨ 功能
+> Every screenshot below is the real iwara.tv rendered twice — as shipped, and with the script — on the same **made-up data**: titles, names, text, tags, covers and avatars are placeholders.
 
-### 🖊️ 创作工作台
+## ✨ Features
 
-把视频和图片的发布页、编辑页与内容管理页统一为一套分步流程。
+### 🖊️ Creator studio
 
-- **四步发布流程**：上传 → 内容 → 标签 → 发布
-  - 视频选中即开始上传，可边传边填表
-  - 上传完成后存进草稿，刷新页面无需重新上传
+The video and image upload, edit and manage pages become one step-by-step studio.
 
-- **所见即所得编辑**
-  - Markdown 编辑支持（回车新段落、Shift+回车换行）
-  - 支持 `@` 提及用户、引用自己的作品
-  - `Tab` 键快速跳到下一个填空项
+<p align="center"><img src="docs/images/studio.png" alt="Creator studio" width="100%"></p>
 
-- **智能标签**
-  - 多语言搜索：英文、简体中文、繁體中文、日本語
-  - 视频和图库均需选一个类别
-  - 选过的标签自动记录在「用过的标签」
-  - 词库来自 [LoveIwara](https://github.com/FoxSensei001/LoveIwara/tree/master/tool/data/iwara_tags) 的 `tool/data/iwara_tags`，除英文外是机器翻译
+- **Four steps**: Upload → Content → Tags → Publish
+  - A video starts uploading as soon as you pick it; fill in the form while it uploads
+  - Once uploaded it is saved as a draft — refreshing the page doesn't mean uploading again
+- **What-you-see-is-what-you-get editing**
+  - Markdown under the hood (Enter for a new paragraph, Shift+Enter for a line break)
+  - `@` mentions and links to your own works
+  - `Tab` jumps to the next blank to fill in
+- **Smart tags**
+  - Search in English, Simplified Chinese, Traditional Chinese or Japanese
+  - Videos and galleries each need one category
+  - Tags you've used are kept under "Recently used"
+  - The dictionary comes from [LoveIwara](https://github.com/FoxSensei001/LoveIwara/tree/master/tool/data/iwara_tags) (`tool/data/iwara_tags`); everything except English is machine-translated
+- **Covers**
+  - Pick from the frames the server generated
+  - Premium members can upload a custom cover
+- **Templates**
+  - Titles can hold `{blank}` placeholders and an auto-incrementing `{#}` episode number
+  - Apply a template at any step
+  - Save what you have as a new template, before or after publishing
+- **Content manager**
+  - A card wall with cover thumbnails
+  - Search, sort and stats
+  - Shows the separate upload cooldowns for videos and galleries
 
-- **灵活的封面管理**
-  - 从服务端生成的候选帧中选择
-  - 高级会员可上传自定义封面
+### 🏠 Home page
 
-- **发布模板**
-  - 标题可包含 `{填空}` 占位符、`{#}` 自动递增期数
-  - 任意步骤套用模板
-  - 发布前后均可保存当前内容为新模板
+<p align="center"><img src="docs/images/home.png" alt="Home page" width="100%"></p>
 
-- **内容管理面板**
-  - 卡片式墙面，带封面缩略图
-  - 支持搜索、排序、统计
-  - 显示视频与图库各自的发布冷却状态
+- Site news folds into one compact line.
+- Each section (videos, images…) switches New / Hot / Top and pages in place.
 
-### 🔍 搜索增强
+### 🔍 Search
 
-- 顶栏搜索框可先选择板块（视频、图库、帖子、用户等）再搜索。
-- 高级面板支持多个标签（且 / 或）、排除标签、作者、精确短语、日期、评级和排序，并实时预览生成的搜索语句。
+<p align="center"><img src="docs/images/search.png" alt="Advanced search panel" width="100%"></p>
 
-### 📄 分页
+- The header search box lets you pick a section first (videos, galleries, posts, users…). The search results page has its own full search bar, so the header box is hidden there.
+- On the results page, the keyword is whatever is in the search box right now: clear it and change a filter, and the search uses only the filters.
+- The advanced panel supports several tags (all / any), excluded tags, authors, exact phrases, dates, rating and sort, with a live preview of the query it builds.
 
-- 列表页提供传统分页栏，可跳到任意页。
-- 视频和图库列表还可切换为瀑布流（无限滚动），选择会被记住。
+### 📄 Pagination
 
-### 👤 用户标识
+<p align="center"><img src="docs/images/pager.png" alt="Pager" width="100%"></p>
 
-- 头像按身份显示光环：高级会员为渐变环并带柔和光晕，管理员红色，版主绿色，受限用户灰色。
-- 用户资料页显示身份徽章。
+- List pages get a classic pager that can jump to any page.
+- Video and gallery lists can switch to infinite scroll instead; your choice is remembered.
 
-### 💬 评论与帖子渲染
+### 👤 User badges
 
-- 论坛引用渲染为带头像、昵称和「跳转到楼层」链接的引用条。
-- 小尾巴显示为灰色小字脚注，站内表情按合适大小显示。
-- 只改变显示效果，不改变消息的发送方式。
+- Avatars get a ring by role: a gradient ring with a soft glow for Premium, red for admins, green for moderators, grey for restricted users.
+- Profiles show a role badge.
 
-### 🏷️ 标签翻译与筛选
+### 💬 Comments and posts
 
-- 视频、图库等页面上的标签链接按当前语言显示（来自词库），鼠标悬停可看原文。
-- 视频和图库列表可按多个标签筛选（且），候选来自最近用过的标签和当前列表中的标签。
+<p align="center"><img src="docs/images/forum.png" alt="Forum quotes and signatures" width="100%"></p>
 
-### 📬 订阅页筛选
+- Forum quotes become a quote bar with avatar, name and a "jump to post" link.
+- Signatures shrink to a small grey footnote, and site emoji render at a sensible size.
+- Only the display changes — how messages are sent is untouched.
 
-- 订阅页的视频、图像两栏右侧多出「筛选」和「标签」两张卡：排序（默认「最新」，另有趋势 / 人气 / 点赞 / 观看）、评级（默认全部）、发布年月，以及按标签过滤（且）；每张卡右上角可一键重置。
-- 筛选只在关注的作者范围内生效，切换不刷新页面；视频和图像两栏共用同一套筛选。
-- 常用的标签组合可以保存，视频、图库、订阅页通用。
-- 视频、图库列表页右栏多一张「评级」卡（全部 / 全年龄 / 成人），不用去侧栏切全站评级；默认跟随侧栏设置。
-- 窄屏上卡片默认收起，点标题展开。
+### 🏷️ Tag translation and filters
 
-### 🙋 作者页
+- Tag links on video, gallery and other pages show in your language (from the dictionary); hover to see the original.
+- Video and gallery lists can be filtered by several tags at once (all), picked from your recent tags and the tags on the current list.
 
-- 横幅和头像可以点击放大查看原图（和图片详情页同一个看图器，两张之间可以左右切换）。
-- 头部 @用户名下面显示粉丝数和关注数，点击进入对应列表；好友按钮的「待办」改成「已申请」。
-- 「关于」页：简介放进卡片；「最新视频 / 最新图片」标题可点击，右侧有 最新 / 热门 / 人气 按钮直达对应排序，分区下面有分页条，可以原地翻页；评论标题显示条数。
-- 视频、图片页右栏有「筛选」（排序、发布年月）、「翻页方式」（传统分页 / 瀑布流）和「标签」三张卡，和订阅页一样，切换不刷新页面。
-- 右栏在宽屏上随页面滚动保持可见；关注中 / 粉丝页的用户显示为卡片。
-- 翻页、切换视频 / 图片等栏目后，页面回到头像栏下面（列表开头），不再弹回页面顶端。
-- 手机上横幅和头像缩小，入口改成一行可横向滑动的标签。
+### 📬 Subscriptions
 
-### 🃏 卡片预览
+<p align="center"><img src="docs/images/subs.png" alt="Subscription filters" width="100%"></p>
 
-- 视频、图库卡片的作者行最右边有一个「⋯」，点开是一张预览卡片，不用离开列表：大封面（视频会播放动图预览）、完整标题、作者、统计（R-18 / 私有 / 播放 / 点赞 / 评论 / 时长 / 张数 / 发布时间）、简介、标签（显示成你的语言）。
-- 图库可以在卡片里左右翻页（滑动、触控板横扫、箭头键或悬停箭头），点某一张直接用大图查看器看。
-- 底部一行：点赞、复制链接、新标签打开、打开。
-- 宽屏是左封面右信息；手机上是从底部弹出的面板，往下拖可以关闭。
+- The videos and images tabs of Subscriptions get a "Filters" card and a "Tags" card on the right: sort (Latest by default, plus Trending / Popular / Likes / Views), rating (All by default), year and month, and tag filtering (all). Each card has a one-click reset.
+- Filters only apply to the creators you follow and switch without reloading; videos and images share the same filters.
+- Save tag combinations you use often — they work on videos, galleries and subscriptions alike.
+- Video and gallery lists get a "Rating" card on the right (All / General / Ecchi), so you don't have to change the site-wide rating in the sidebar; it follows the sidebar setting by default.
+- On narrow screens the cards start collapsed — tap a title to open one.
 
-### ✅ 规则确认
+### 🙋 Creator pages
 
-- 发评论、回帖等表单里站点那一长行「规则 ☐ 按下提交按钮…即表示我同意…」收成提交键旁边的小开关「☐ 同意 规则」，记住你上次的选择（从没勾过就不勾）。
-- 只在按下提交时才替站点勾上它自己的勾选框，打开页面不会让表单变成「已修改」，切页面、关标签不再被「确定离开吗」拦住。
-- 没勾「同意」就按提交，会提示先勾选，不会悄悄失败。
+<p align="center"><img src="docs/images/profile.png" alt="Creator page" width="100%"></p>
 
-### 🌐 评论翻译
+- Click the banner or avatar to view the full image (the same viewer as image pages; swipe between the two).
+- Under the @username you'll see follower and following counts, linking to the lists; the friend button's "Pending" reads "Requested".
+- About tab: the bio sits in a card; the "Latest videos / images" headings are links, with New / Hot / Top buttons for each sort and a pager under every section that pages in place; the comments heading shows the count.
+- The videos and images tabs get "Filters" (sort, year and month), "Paging" (pager / infinite) and "Tags" cards on the right — like Subscriptions, they switch without reloading.
+- On wide screens the sidebar stays in view as you scroll; Following / Followers show users as cards.
+- After paging or switching tabs the page returns to just under the header (the top of the list), not the very top.
+- On phones the banner and avatar shrink and the tabs become one horizontally scrolling row.
 
-- 帖子和评论正文带有翻译按钮，点击后使用谷歌翻译，结果会被缓存。
+### 🃏 Card preview
 
-### 🧭 侧边栏
+<p align="center"><img src="docs/images/cardpreview.png" alt="Card preview" width="100%"></p>
 
-- 语言、评级、主题变为侧边栏底部的图标开关；主题增加「跟随系统」。
-- 论坛下新增子菜单，其中的「最近」列出所有板块的最新帖子。
+- A "⋯" at the end of the author row on every video and gallery card opens a preview without leaving the list: a large cover (videos play their animated preview), the full title, author, stats (R-18 / private / views / likes / comments / length / image count / date), description and tags in your language.
+- Galleries can be paged inside the card (swipe, trackpad, arrow keys or the hover arrows); click an image to open it in the full viewer.
+- Bottom row: like, copy link, open in new tab, open.
+- Wide screens show the cover on the left and details on the right; on phones it's a bottom sheet you can drag down to close.
 
-## 📋 目标与边界
+### ✅ Rich editor and rules agreement
 
-- 给网页端的普通用户和内容创作者带来便利：更顺手的发布、编辑和管理。
-- 只服务于 iwara 官方网站，不接入任何外部站点的内容。
-- 不做任何损害官方网站利益的功能，例如移除广告。
+<p align="center"><img src="docs/images/comment.png" alt="Comment editor and rules switch" width="100%"></p>
 
-## 🛠️ 安装
+- Every Markdown box on the site (comments, replies, forum posts, edits) becomes the same live editor as the studio, with the box's character limit shown as "used / limit".
+- The long "Rules ☐ By pressing the submit button… I agree…" line folds into a small "☐ I agree to the rules" switch next to the submit button, which remembers your last choice (unchecked if you never checked it).
+- The site's own checkbox is only ticked at the moment you submit, so opening a page no longer marks the form as changed and "Leave this page?" stops interrupting you.
+- Submitting without agreeing tells you to check the box instead of failing silently.
 
-1. 安装 [Tampermonkey](https://www.tampermonkey.net/)（Chrome、Firefox、Safari 等）或 [Violentmonkey](https://violentmonkey.github.io/)
-2. 在脚本管理器中新建脚本，粘贴 `dist/iwara-enhanced.user.js` 的全部内容
-3. 访问 iwara.tv，脚本自动激活
+### 🌐 Translation
 
-**从旧版升级**：脚本名称和命名空间已更改，旧版用户请先卸载旧脚本，再安装本脚本，不要在旧脚本上直接覆盖更新。脚本现在在 `document-start` 阶段运行。
+- Comments, forum posts, posts, profile bios, the home page announcement, video / image titles with descriptions, and the card preview get a translate button in their own action area (next to Reply, the post number, Like / Share, the bio heading, the announcement dialog's title bar, or the preview's bottom button row). It uses Google Translate into the site's current language.
+- Mixed-language content (such as an announcement with an English paragraph and a Chinese one) also gets a button; only the foreign lines are translated.
+- The translate button is a split button: the left part translates / shows the original, the arrow on the right opens a language menu (15 languages). Picking one translates that item right away and becomes the default from then on; until you pick one, it follows the interface language.
+- The translation replaces the text in place, keeping line breaks, links, bold, emoji and inline code; click again to show the original. Content that is already in your language, or is only emoji or links, gets no button.
+- Loading and failures show on the button itself; results are cached for the session.
 
-**使用提示**：创作工作台右上角的「⋯」菜单可以：
-- 切回原版页面
-- 重新查看功能引导
+### 🧭 Sidebar
 
-## ✅ 能做什么、不能做什么
+- Language, rating and theme become icon switches at the bottom of the sidebar; the theme adds "Follow system".
+- Forum gets a sub-menu whose "Recent" lists the newest threads across all boards.
 
-**能做：**
-- 只在 `iwara.tv` 上运行，使用站点自身的登录状态和前端接口（上传、创建、编辑、删除、冷却、标签与用户推荐）
-- 模板和草稿存储在站点的 `localStorage`（键以 `iwe:` 开头）
-- 外部网络请求只有两类：从 jsDelivr 下载标签词库；点击评论翻译时，把你点击翻译的那段文字发送到谷歌翻译（`translate.googleapis.com`），不点击就不会发送
-- 其余请求都只发往站点自己的 `api.iwara.tv`
+## 📋 Goals and limits
 
-**不能做：**
-- 发布前的「我已阅读并同意网站规则」复选框需要由你自己勾选
-- 无法绕过或修改站点的内容审核政策
+- Make the website more convenient for everyday viewers and creators: smoother publishing, editing and managing.
+- Serve only the official Iwara website; no content from any other site is pulled in.
+- Nothing that hurts the official site, such as removing ads.
 
-## ⚠️ 已知限制
+## 🛠️ Install
 
-- 视频一旦保存了自定义封面，无法改回视频截帧，只能更换其它图片（服务端限制）
-- 站点的详情接口有缓存：编辑保存后，其他用户可能需要等待一段时间才能看到更新；脚本会以保存结果为准，不会用旧值覆盖
-- 上传限制、码率表、格式说明等内容会跟随站点发布页的更新而变化；站点改版后脚本可能需要更新
+1. Install [Tampermonkey](https://www.tampermonkey.net/) (Chrome, Firefox, Safari…) or [Violentmonkey](https://violentmonkey.github.io/)
+2. Create a new script in the manager and paste the whole of `dist/iwara-enhanced.user.js`
+3. Open iwara.tv — the script activates automatically
 
-## 👨‍💻 开发
+A browser-extension build of the same code is described in [extension/README.md](extension/README.md).
+
+**Upgrading from an old version**: the script's name and namespace have changed. Uninstall the old script first, then install this one — don't update over the old one. The script now runs at `document-start`.
+
+**Tip**: the "⋯" menu at the top right of the studio lets you
+- switch back to the original page
+- replay the feature tour
+
+## ✅ What it does and doesn't do
+
+**Does:**
+- Runs only on `iwara.tv`, using the site's own login and front-end APIs (upload, create, edit, delete, cooldowns, tag and user suggestions)
+- Stores templates and drafts in the site's `localStorage` (keys start with `iwe:`)
+- Makes only two kinds of outside requests: downloading the tag dictionary from jsDelivr, and — only when you click translate — sending that text to Google Translate (`translate.googleapis.com`)
+- Everything else goes to the site's own `api.iwara.tv`
+
+**Doesn't:**
+- Tick "I have read and agree to the site rules" before publishing for you — you do that yourself
+- Get around or change the site's moderation policy
+
+## ⚠️ Known limits
+
+- Once a video has a custom cover saved, it can't go back to a video frame — only to another image (server limitation)
+- The site caches detail responses: after you save an edit, other people may see the update only after a while; the script trusts the save result and never overwrites it with stale data
+- Upload limits, bitrate tables and format notes follow the site's upload page; if the site changes, the script may need an update
+
+## 👨‍💻 Development
 
 ```bash
 npm install
 node build.mjs
 ```
 
-**项目结构：**
-- 源码在 `src/`，按文件名顺序组装为 `dist/` 中的单文件脚本
-- 编辑器采用开源 [Milkdown](https://milkdown.dev)（MIT License，基于 ProseMirror）
-- 由 esbuild 将 `vendor/milkdown.js` 打包进同一个文件，安装时无需额外网络请求
+**Layout:**
+- Sources live in `src/` and are concatenated in file-name order into a single script in `dist/`
+- The editor is the open-source [Milkdown](https://milkdown.dev) (MIT, built on ProseMirror)
+- esbuild bundles `vendor/milkdown.js` into the same file, so installing needs no extra network requests
 
-## 📄 许可
+**Screenshots**: `docs/screenshots/capture.mjs` renders the real site with and without the script (English UI, made-up data) and lays out the images in `docs/images/`. See the comment at the top of that file for how to run it.
 
-MIT，见 [LICENSE](LICENSE)。
+## 📄 License
+
+MIT, see [LICENSE](LICENSE).
