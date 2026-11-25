@@ -247,8 +247,22 @@ const site = (() => {
   function ctx() {
     return { path: location.pathname, search: new URLSearchParams(location.search), routeChanged: lastPath !== location.pathname + location.search, dark: isDark() };
   }
+  // 站点语言是在页面里直接切的（侧栏底部的语言选项），站点自己的字当场换了，我们挂上去的界面大多只画一次、不会跟着变，
+  // 留下中英混杂。切了就整页刷新一次，让所有界面按新语言重新生成。写 locale 的时机：手动切换、或拿到账号语言后补写——后者语言没变，不刷新。
+  function reloadOnLangSwitch() {
+    const f = localStorage.getItem('locale');
+    if (!f || langOf(f) === env.lang) return false;
+    try {
+      const last = +sessionStorage.getItem('iweLangReload') || 0;
+      if (Date.now() - last < 5000) return false; // 防止刷新后仍对不上时反复刷新
+      sessionStorage.setItem('iweLangReload', String(Date.now()));
+    } catch { /* 没有 sessionStorage 也照刷 */ }
+    location.reload();
+    return true;
+  }
   function run() {
     queued = false;
+    if (reloadOnLangSwitch()) return;
     const c = ctx();
     lastPath = location.pathname + location.search;
     for (const f of features) {

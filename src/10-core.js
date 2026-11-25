@@ -184,9 +184,10 @@ const env = {
 };
 // 和站点取法一致：localStorage.locale → 账号语言 → 英文。站点代码本想退到浏览器语言，但写成了 navigator.languagess（多一个 s），
 // 实际永远退到英文；这里跟着站点实际显示的走，不看浏览器语言（否则没登录时站点英文、插件中文。AI 站和主站的 localStorage 不互通，最容易碰上）
+const langOf = (userLocale) => { const l = String(userLocale || 'en').toLowerCase(); return l.startsWith('zh') ? 'zh' : l.startsWith('ja') ? 'ja' : 'en'; };
 function detectLang(userLocale) {
   const l = String(userLocale || 'en').toLowerCase();
-  env.lang = l.startsWith('zh') ? 'zh' : l.startsWith('ja') ? 'ja' : 'en';
+  env.lang = langOf(l);
   const hant = /zh-(tw|hk|mo)|hant/i.test(navigator.language);
   env.tagLang = l.startsWith('zh') ? (hant ? 'zh-TW' : 'zh-CN') : l.startsWith('ja') ? 'ja' : 'en';
 }

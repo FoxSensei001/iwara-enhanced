@@ -11,21 +11,21 @@
 (() => {
   defineStrings(
     {
-      sb_lang: '语言', sb_rating: '评级', sb_theme: '主题',
+      sb_lang: '语言', sb_langNote: '切换语言会刷新页面', sb_rating: '评级', sb_theme: '主题',
       sb_rating_all: '全部', sb_rating_general: '普通', sb_rating_ecchi: '成人',
       sb_theme_system: '跟随系统', sb_theme_light: '白天', sb_theme_dark: '夜晚', sb_theme_auto_short: '自动',
       sb_recent: '最近', sb_recent_title: '最近', sb_recent_empty: '暂无帖子', sb_recent_failed: '加载失败',
       sb_col_thread: '主题', sb_col_posts: '发布', sb_col_views: '观看人数', sb_col_last: '最新发布', sb_by: '由', sb_last_page: '查看最后一页',
     },
     {
-      sb_lang: 'Language', sb_rating: 'Rating', sb_theme: 'Theme',
+      sb_lang: 'Language', sb_langNote: 'Switching language reloads the page', sb_rating: 'Rating', sb_theme: 'Theme',
       sb_rating_all: 'All', sb_rating_general: 'General', sb_rating_ecchi: 'Ecchi',
       sb_theme_system: 'System', sb_theme_light: 'Light', sb_theme_dark: 'Dark', sb_theme_auto_short: 'Auto',
       sb_recent: 'Recent', sb_recent_title: 'Recent', sb_recent_empty: 'No threads yet', sb_recent_failed: 'Failed to load',
       sb_col_thread: 'Thread', sb_col_posts: 'Posts', sb_col_views: 'Views', sb_col_last: 'Last post', sb_by: 'by', sb_last_page: 'Last page',
     },
     {
-      sb_lang: '言語', sb_rating: 'レーティング', sb_theme: 'テーマ',
+      sb_lang: '言語', sb_langNote: '言語を切り替えるとページが再読み込みされます', sb_rating: 'レーティング', sb_theme: 'テーマ',
       sb_rating_all: 'すべて', sb_rating_general: '一般', sb_rating_ecchi: '成人向け',
       sb_theme_system: 'システム', sb_theme_light: 'ライト', sb_theme_dark: 'ダーク', sb_theme_auto_short: '自動',
       sb_recent: '最近', sb_recent_title: '最近', sb_recent_empty: 'まだ投稿がありません', sb_recent_failed: '読み込みに失敗しました',
@@ -95,7 +95,7 @@
     if (again) { if (toggle) closePopover(); else holdPopover(); return; } // 点同一个按钮 = 收起；悬停时已经开着就不动
     closePopover(true);
     document.querySelectorAll('.iwe-sb-pop.out').forEach((e) => e.remove());
-    popover = h('div.iwe-sb-pop', { role: 'menu', onpointerenter: holdPopover, onpointerleave: (e) => { if (e.pointerType === 'mouse') releasePopover(); } }, items.map((it) =>
+    popover = h('div.iwe-sb-pop', { role: 'menu', onpointerenter: holdPopover, onpointerleave: (e) => { if (e.pointerType === 'mouse') releasePopover(); } }, items.map((it) => it.note ? h('div.iwe-sb-note', { role: 'note' }, it.note) :
       h('button.iwe-sb-item' + (it.on ? '.on' : ''), { type: 'button', role: 'menuitemradio', 'aria-checked': String(!!it.on), onclick: () => { closePopover(); it.pick(); } },
         h('span.iwe-sb-ico', it.icon), h('span.iwe-sb-label', it.label), h('span.iwe-sb-check', it.on ? icon('check', 14) : null))));
     popover.dataset.for = anchor.dataset.kind;
@@ -145,7 +145,7 @@
       b.dataset.kind = kind;
       return b;
     };
-    const lang = btn('lang', t('sb_lang'), () => (LANGS.map(([v, label]) => ({ label, icon: fa('globe', 16), on: current('locale') === v, pick: () => pickRadio('locale', v) }))));
+    const lang = btn('lang', t('sb_lang'), () => (LANGS.map(([v, label]) => ({ label, icon: fa('globe', 16), on: current('locale') === v, pick: () => pickRadio('locale', v) })).concat([{ note: t('sb_langNote') }])));
     const rating = btn('rating', t('sb_rating'), () => (RATINGS.map((v) => ({ label: t('sb_rating_' + v), icon: fa(RATING_ICON[v], 16), on: current('rating') === v, pick: () => pickRadio('rating', v) }))));
     const theme = btn('theme', t('sb_theme'), () => {
       const mode = themeMode();
@@ -197,6 +197,7 @@ html.iwe-sb-quiet .page > .menu.menu--open{visibility:hidden}
 .iwe-sb-pop.out{animation:iwe-sb-out .12s var(--ease) forwards;pointer-events:none}
 @media (prefers-reduced-motion:reduce){.iwe-sb-pop,.iwe-sb-pop.out{animation:none}}
 .iwe-sb-item{appearance:none;display:flex;align-items:center;gap:10px;width:100%;height:36px;padding:0 10px;border:0;border-radius:5px;background:none;color:inherit;font:inherit;text-align:left;cursor:pointer}
+.iwe-sb-note{padding:6px 10px 4px;margin-top:2px;border-top:1px solid var(--line,rgba(128,128,128,.25));font-size:12px;opacity:.65}
 .iwe-sb-item:hover{background:var(--sunk)}
 .iwe-sb-item.on{font-weight:600}
 .iwe-sb-ico{display:inline-flex;flex:none;color:var(--fg2)}
