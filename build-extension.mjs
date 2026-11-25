@@ -125,7 +125,13 @@ if (release.baseUrl) {
   fs.writeFileSync(path.join(out, 'latest.json'), `${JSON.stringify(latest, null, 2)}\n`);
   // 托管目录的首页：给人看的下载页（downloadPage 默认就指向这里）
   const { releasePage } = await import('./tool/release-page.mjs');
-  fs.writeFileSync(path.join(out, 'index.html'), releasePage(latest));
+  fs.writeFileSync(path.join(out, 'index.html'), releasePage(latest, { repoUrl: release.repoUrl, baseUrl: release.baseUrl }));
+  // 下载页用的字体（Geist，OFL）、截图和图标，和页面放在同一目录
+  for (const f of fs.readdirSync(path.join(ext, 'page'))) fs.copyFileSync(path.join(ext, 'page', f), path.join(out, f));
+  if (fs.existsSync(path.join(ext, 'icons'))) {
+    fs.copyFileSync(path.join(ext, 'icons', 'icon-128.png'), path.join(out, 'icon.png'));
+    fs.copyFileSync(path.join(ext, 'icons', 'icon-32.png'), path.join(out, 'favicon.png'));
+  }
   if (release.firefoxChannel === 'unlisted') {
     const updates = { addons: { [gecko.id]: { updates: [{
       version,

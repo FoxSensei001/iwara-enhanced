@@ -32,7 +32,13 @@ npm run build:ext        # 先构建 user.js，再生成下面所有产物
 { "baseUrl": "https://foxsensei001.github.io/iwara-enhanced", "downloadPage": "", "firefoxChannel": "listed", "firefoxListingUrl": "" }
 ```
 
-托管方式：本仓库的 `gh-pages` 分支，内容只有发版文件，和源码历史无关。GitHub Pages 从这个分支的根目录发布，`baseUrl` 就是 Pages 地址。首页 `index.html` 是构建时用 `latest.json` 生成的下载页。`firefoxListingUrl` 填 AMO 上架后的商品页地址，下载页和 `latest.json` 会带上它。
+托管方式：本仓库的 `gh-pages` 分支，内容只有发版文件，和源码历史无关。GitHub Pages 从这个分支的根目录发布，`baseUrl` 就是 Pages 地址。首页 `index.html` 是构建时用 `latest.json` 生成的下载页。`firefoxListingUrl` 填 AMO 上架后的商品页地址，下载页和 `latest.json` 会带上它。`repoUrl` 是下载页上的源码链接。
+
+下载页由 `tool/release-page.mjs` 生成，用到的素材放在 `extension/page/`，构建时会一起复制进 `extension/release/`：
+- Geist 字体（来自 npm 上的 `geist` 包，SIL OFL，许可证随字体一起发布）。
+- 截图 `shot-*.jpg`：用 `docs/images/` 里的同名图裁成只剩浏览器窗口（裁掉上方标题，下边留 72px），再转成 JPEG（质量 80）。换截图时照这个规则重新导出。
+
+页面不连任何第三方，也没有统计。会按访客的设备和浏览器推荐装法，深浅色和三种语言都可以切换。
 
 - `baseUrl` 留空（默认）时：不写 `@updateURL`，不写 `update_url`，Chromium 版不带后台检查，也不生成 `latest.json` / `updates.json`。临时试验可以用环境变量 `IWE_RELEASE_BASE_URL`、`IWE_FIREFOX_CHANNEL` 覆盖。
 - `downloadPage` 可选，填一个给人看的下载页（例如 Releases 页面）；留空时用 `baseUrl/`。

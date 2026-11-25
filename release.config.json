@@ -3,5 +3,6 @@
   "baseUrl": "https://foxsensei001.github.io/iwara-enhanced",
   "downloadPage": "",
   "firefoxChannel": "listed",
-  "firefoxListingUrl": ""
+  "firefoxListingUrl": "",
+  "repoUrl": "https://github.com/FoxSensei001/iwara-enhanced"
 }
