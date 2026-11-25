@@ -38,7 +38,7 @@ npm run build:ext        # 先构建 user.js，再生成下面所有产物
 - Geist 字体（来自 npm 上的 `geist` 包，SIL OFL，许可证随字体一起发布）。
 - 截图 `shot-*.jpg`：用 `docs/images/` 里的同名图裁成只剩浏览器窗口（裁掉上方标题，下边留 72px），再转成 JPEG（质量 80）。换截图时照这个规则重新导出。
 
-页面不连任何第三方，也没有统计。会按访客的设备和浏览器推荐装法，深浅色和三种语言都可以切换。
+页面不连任何第三方，也没有统计。推荐油猴脚本和 Firefox 版（都会自动更新），Chrome 手动加载只作备选；手机上只显示油猴脚本。安装引导每步一句话，配一张照真实界面画的示意图，按访客的浏览器和系统显示对应的步骤。语言默认跟随浏览器的语言偏好、主题默认跟随系统，都可以在顶栏的下拉菜单里改。改了浏览器、扩展的界面用语时，示意图里的文字（`tool/release-page.mjs` 的 `MOCK`）要跟着改。
 
 - `baseUrl` 留空（默认）时：不写 `@updateURL`，不写 `update_url`，Chromium 版不带后台检查，也不生成 `latest.json` / `updates.json`。临时试验可以用环境变量 `IWE_RELEASE_BASE_URL`、`IWE_FIREFOX_CHANNEL` 覆盖。
 - `downloadPage` 可选，填一个给人看的下载页（例如 Releases 页面）；留空时用 `baseUrl/`。
