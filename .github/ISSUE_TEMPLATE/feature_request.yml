@@ -1,0 +1,24 @@
+name: 功能建议 / Feature request / 機能の提案
+description: 希望增加或改进的功能 / Something you'd like added or improved
+labels: [enhancement]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        插件只服务 iwara 官方网站，不做损害官方利益的功能（例如去广告），也不接入外部站点的内容。
+        The add-on only serves the official Iwara site. It won't do anything that hurts the site (such as removing ads) or pull in content from other sites.
+  - type: textarea
+    id: problem
+    attributes:
+      label: 想解决什么问题 / What problem should it solve
+      description: 在哪个页面、现在哪里不方便 / Which page, and what's inconvenient today
+    validations:
+      required: true
+  - type: textarea
+    id: idea
+    attributes:
+      label: 你设想的做法 / How you imagine it
+  - type: textarea
+    id: extra
+    attributes:
+      label: 参考或截图 / References or screenshots
