@@ -161,11 +161,15 @@
 
 ## 🛠️ インストール
 
-1. [Tampermonkey](https://www.tampermonkey.net/)（Chrome・Firefox・Safari など）または [Violentmonkey](https://violentmonkey.github.io/) をインストール
-2. スクリプトマネージャーで新規スクリプトを作成し、`dist/iwara-enhanced.user.js` の内容をすべて貼り付け
-3. iwara.tv または iwara.ai を開くと自動で有効になります
+**[ダウンロードページ](https://foxsensei001.github.io/iwara-enhanced/)** を開いてください。ブラウザーと端末に合ったインストール方法と手順が表示され、各機能のデモもその場で試せます。
 
-同じソースのブラウザー拡張版については [extension/README.md](extension/README.md) を参照してください。
+おすすめの 2 つの方法はどちらも自動で更新されます：
+- **ユーザースクリプト**（PC・スマホ対応）：[Tampermonkey](https://www.tampermonkey.net/) または [Violentmonkey](https://violentmonkey.github.io/) を入れてから、[スクリプトをインストール](https://foxsensei001.github.io/iwara-enhanced/iwara-enhanced.user.js) を開き、表示された画面でインストールを確定します。
+- **Firefox 拡張機能**：Firefox Add-ons に申請中です。公開されたらダウンロードページにインストールボタンが表示されます。
+
+Chrome / Edge では拡張機能を手動で読み込むこともできますが、自動更新はされず、新しいバージョンが出たときに通知されるだけです。詳しくはダウンロードページを参照してください。パッケージ化とリリースの詳細は [extension/README.md](extension/README.md) にあります。
+
+インストール後、iwara.tv または iwara.ai を開くと有効になります。
 
 **旧バージョンからの移行**：スクリプト名と名前空間が変わりました。旧スクリプトを先にアンインストールしてから、本スクリプトをインストールしてください（上書き更新はしないでください）。現在は `document-start` で実行されます。
 

@@ -161,11 +161,15 @@
 
 ## 🛠️ 安装
 
-1. 安装 [Tampermonkey](https://www.tampermonkey.net/)（Chrome、Firefox、Safari 等）或 [Violentmonkey](https://violentmonkey.github.io/)
-2. 在脚本管理器中新建脚本，粘贴 `dist/iwara-enhanced.user.js` 的全部内容
-3. 访问 iwara.tv 或 iwara.ai，脚本自动激活
+打开 **[下载页](https://foxsensei001.github.io/iwara-enhanced/)**，它会按你的浏览器和设备推荐装法，并给出分步说明；页面上还能直接试用各项功能的演示。
 
-同一份源码的浏览器扩展版见 [extension/README.md](extension/README.md)。
+推荐的两种装法都会自动更新：
+- **油猴脚本**（电脑、手机都能用）：先装 [Tampermonkey](https://www.tampermonkey.net/) 或 [Violentmonkey](https://violentmonkey.github.io/)，再点 [安装脚本](https://foxsensei001.github.io/iwara-enhanced/iwara-enhanced.user.js)，在弹出的页面里确认安装。
+- **Firefox 扩展**：正在提交 Firefox 附加组件商店，上架后下载页会给出安装按钮。
+
+Chrome / Edge 也可以手动加载扩展，但不会自动更新，只会在有新版时提示，详见下载页。打包和发版的细节见 [extension/README.md](extension/README.md)。
+
+装好后访问 iwara.tv 或 iwara.ai 即可生效。
 
 **从旧版升级**：脚本名称和命名空间已更改，旧版用户请先卸载旧脚本，再安装本脚本，不要在旧脚本上直接覆盖更新。脚本现在在 `document-start` 阶段运行。
 

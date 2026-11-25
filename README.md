@@ -161,11 +161,15 @@ The video and image upload, edit and manage pages become one step-by-step studio
 
 ## 🛠️ Install
 
-1. Install [Tampermonkey](https://www.tampermonkey.net/) (Chrome, Firefox, Safari…) or [Violentmonkey](https://violentmonkey.github.io/)
-2. Create a new script in the manager and paste the whole of `dist/iwara-enhanced.user.js`
-3. Open iwara.tv or iwara.ai — the script activates automatically
+Open the **[download page](https://foxsensei001.github.io/iwara-enhanced/)**. It recommends an install method for your browser and device, walks you through it step by step, and lets you try live demos of the features.
 
-A browser-extension build of the same code is described in [extension/README.md](extension/README.md).
+Both recommended methods update automatically:
+- **Userscript** (desktop and mobile): install [Tampermonkey](https://www.tampermonkey.net/) or [Violentmonkey](https://violentmonkey.github.io/), then click [Install script](https://foxsensei001.github.io/iwara-enhanced/iwara-enhanced.user.js) and confirm on the page that opens.
+- **Firefox add-on**: being submitted to Firefox Add-ons; once it's listed, the download page shows an install button.
+
+Chrome / Edge can also load the extension manually, but it won't update itself — it only tells you when a new version is out. See the download page. Packaging and release details are in [extension/README.md](extension/README.md).
+
+Once installed, open iwara.tv or iwara.ai and it's active.
 
 **Upgrading from an old version**: the script's name and namespace have changed. Uninstall the old script first, then install this one — don't update over the old one. The script now runs at `document-start`.
 
