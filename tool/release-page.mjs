@@ -346,8 +346,10 @@ export function releasePage(latest, { repoUrl = '', baseUrl = '' } = {}) {
 
   /* ── showcase：宽屏左边功能列表 + 右边可以点的演示窗口；窄屏窗口上方一排标签 ── */
   .showcase { margin-top: 64px; }
-  .sc-hint { display: flex; align-items: center; justify-content: center; gap: 8px; margin: 0 auto 22px; font-size: 13.5px; color: var(--fg-2); text-align: center; text-wrap: balance; }
-  .sc-hint svg { color: var(--hl); }
+  .sc-hint { margin: 0 auto 22px; max-width: 46em; text-align: center; }
+  .sc-hint p { margin: 0; display: flex; align-items: center; justify-content: center; gap: 8px; font-size: 13.5px; color: var(--fg-2); text-wrap: balance; }
+  .sc-hint .sc-note { margin-top: 6px; font-size: 12.5px; line-height: 1.55; color: var(--fg-3); }
+  .sc-hint svg { color: var(--hl); flex: none; }
   .chips { display: none; }
   .sc-grid { display: grid; grid-template-columns: 280px minmax(0, 1fr); gap: 24px; align-items: start; }
   .feats { display: flex; flex-direction: column; gap: 6px; }
@@ -528,7 +530,10 @@ ${demos.css}
     .dw-url b { margin-left: 0; }
     .dw-bar { padding-left: 8px; gap: 6px; }
     .caption { font-size: 14px; text-align: left; }
-    .sc-hint { font-size: 13px; margin-bottom: 16px; }
+    .sc-hint { margin-bottom: 16px; }
+    .sc-hint p { font-size: 13px; }
+    .sc-hint svg { display: none; }
+    .sc-hint .sc-note { font-size: 12px; }
     section.block { padding-top: 80px; }
     .bento { grid-template-columns: 1fr; }
     .cell { padding: 18px 18px 20px; display: grid; grid-template-columns: auto 1fr; column-gap: 14px; }
@@ -608,7 +613,10 @@ ${demos.css}
       </div>
 
       <div class="showcase rv" id="features">
-        <p class="sc-hint">${ico('spark', 15)}<span>${L('下面的窗口可以直接点，照插件的真实界面做的。右上角能切到「原版」对比。', 'The window below is live, built from the add-on’s real UI. Switch to “Original” at the top right to compare.', '下のウィンドウは操作できます（拡張機能の実際の画面を再現）。右上で「元のサイト」と比較できます。')}</span></p>
+        <div class="sc-hint">
+          <p>${ico('spark', 15)}<span>${L('下面的窗口可以直接点，照插件的真实界面做的。右上角能切到「原版」对比。', 'The window below is live, built from the add-on’s real UI. Switch to “Original” at the top right to compare.', '下のウィンドウは操作できます（拡張機能の実際の画面を再現）。右上で「元のサイト」と比較できます。')}</span></p>
+          <p class="sc-note">${L('这里只是大致还原效果，实际以装好插件后的表现为准；还有很多优化没在这里展示，下面「还有更多」列了一部分。', 'This is only an approximation; the add-on itself is the real thing. Many more improvements aren’t shown here, and a few are listed under “And more” below.', 'ここはおおよその再現です。実際の動作はインストール後にご確認ください。ここで紹介していない改善も多く、一部は下の「ほかにも」にあります。')}</p>
+        </div>
         <div class="chips" role="tablist" aria-label="Features">
           ${DL.map((s, i) => `<button class="chip-t" type="button" role="tab" id="ct-${s.id}" aria-controls="dw" aria-selected="${i === 0}" tabindex="${i === 0 ? 0 : -1}">${ico(s.icon, 15)}${s.t}</button>`).join('')}
         </div>
