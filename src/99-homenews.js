@@ -1,6 +1,6 @@
 // 首页顶部的站点公告：原版是一个整页高的大块（大图 + 多段文字），把首页内容整个挤到屏幕外。
 // 这里收成一行卡片：左边缩略图，中间标题 + 一行摘要，右边「查看全部」；点卡片在浮窗里看完整内容。
-// 原来的 .markdown 节点不复制：打开浮窗时把它搬进去，关闭时搬回原处（站点自己的链接、本脚本的翻译钮和看图都照常可用）。
+// 原来的 .markdown 节点不复制：打开浮窗时把它搬进去，关闭时搬回原处（站点自己的链接、看图都照常可用；翻译钮在浮窗标题栏，见 98-translate.js）。
 
 (() => {
   defineStrings(
@@ -44,7 +44,7 @@
     });
     dlg.addEventListener('pointerdown', (e) => { if (e.target === dlg) close(); });
     onKey = (e) => {
-      if (e.key !== 'Escape' || document.querySelector('.iwe-mdi')) return; // 看大图时 Esc 只关大图
+      if (e.key !== 'Escape' || document.querySelector('.iwe-mdi, .iwe-tr-menu.open')) return; // 看大图 / 开着翻译的语言菜单时 Esc 只关那一层
       e.preventDefault(); e.stopPropagation(); close();
     };
     addEventListener('keydown', onKey, true);
@@ -56,8 +56,10 @@
   const clean = (s) => s.replace(/\s+/g, ' ').trim();
   function build(block, md) {
     const img = md.querySelector('img');
-    const titles = [...md.querySelectorAll('.text--h1,.text--h2,.text--h3,h1,h2,h3')].map((e) => clean(e.textContent)).filter(Boolean);
-    const paras = [...md.querySelectorAll('p')].map((p) => clean(p.textContent)).filter(Boolean);
+    // 翻译开着时原文块还在（藏着、带 data-iwe-tr-src），只取看得见的那一份：卡片上的摘要跟着译文走
+    const shown = (sel) => [...md.querySelectorAll(sel)].filter((e) => !e.closest('[data-iwe-tr-src]'));
+    const titles = shown('.text--h1,.text--h2,.text--h3,h1,h2,h3').map((e) => clean(e.textContent)).filter(Boolean);
+    const paras = shown('p').map((p) => clean(p.textContent)).filter(Boolean);
     const title = titles.join(' · ') || paras[0] || t('newsLabel');
     const summary = (titles.length ? paras : paras.slice(1)).join('  ');
     const thumb = h('div.iwe-news-thumb', img ? h('img', { src: img.currentSrc || img.src, alt: '', loading: 'lazy', draggable: false }) : icon('file', 22));

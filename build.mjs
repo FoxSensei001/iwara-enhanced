@@ -44,6 +44,14 @@ if (nulls.length) {
   process.exitCode = 1;
 }
 
+// 站点页面上 ui.layer 可能不存在，toast() / menu() 这类函数会自己抛异常、什么都不显示（详见 tool/check-site-toast.mjs）
+const { checkSiteToast } = await import('./tool/check-site-toast.mjs');
+const toasts = checkSiteToast(root);
+if (toasts.length) {
+  console.error(`\n⚠ 站点增强里调了挂在 ui.layer 上的界面函数（站点页面上没有这一层，会抛异常且什么都不显示；状态放在按钮上，菜单自己挂到 body 上）：\n  ${toasts.join('\n  ')}\n`);
+  process.exitCode = 1;
+}
+
 // 界面文案三种语言（中文 / English / 日本語）齐不齐、有没有写死的中日文（详见 tool/check-i18n.mjs）
 const { checkI18n } = await import('./tool/check-i18n.mjs');
 const i18n = await checkI18n(root);

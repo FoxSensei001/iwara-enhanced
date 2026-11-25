@@ -6,7 +6,8 @@
 //
 // 查什么：src/ 里 88 号及以后的文件（跑在站点页面上；更早的是工作台，在 Shadow DOM 里，站点样式进不去）
 // 中 h('tag.a.b') 的类名，凡是不带 iwe- 前缀、又出现在站点 CSS 里的，报出来。
-// 故意借用站点样式的不报：Bootstrap 工具类、text / block / col 系列、icon、username、breadcrumbs，
+// 故意借用站点样式的不报：Bootstrap 工具类、text / block / col 系列、icon、username、breadcrumbs、站点按钮（button / button--*，
+// 照着站点的「回复」「分享」按钮搭，要的就是同一套颜色和深浅色），
 // 以及同一个元素上还带着站点 BEM 类名（含 __）的——那是在照着站点组件搭。
 //
 // 站点类名快照：tool/site-classes.txt。站点 CSS 按路由拆包加载，取快照前要在同一个标签页里站内走一遍
@@ -15,7 +16,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 
-const BORROW = /^(text(--[\w-]+)?|block(--[\w-]+|__[\w-]+)?|col(-[\w-]+)?|container(-fluid)?|row|d-[\w-]+|[mp][trblxy]?-(n?\d|auto)|[mp][trblxy]?-(sm|md|lg|xl)-n?\d|icon|username|breadcrumbs|menu__[\w-]+|dropdown__[\w-]+|userDropdownContent__[\w-]+)$/;
+const BORROW = /^(text(--[\w-]+)?|block(--[\w-]+|__[\w-]+)?|col(-[\w-]+)?|container(-fluid)?|row|d-[\w-]+|[mp][trblxy]?-(n?\d|auto)|[mp][trblxy]?-(sm|md|lg|xl)-n?\d|icon|username|breadcrumbs|button(--[\w-]+)?|menu__[\w-]+|dropdown__[\w-]+|userDropdownContent__[\w-]+)$/;
 // row 单独出现不算借用：只有和站点 BEM 类名一起出现才放过（见下面）
 const BORROW_ALONE_NOT_OK = new Set(['row']);
 

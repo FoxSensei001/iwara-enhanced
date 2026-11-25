@@ -314,10 +314,10 @@ function transformSignature(markdown) {
   // 只处理正文这一层的 hr（嵌在引用、列表里的不是小尾巴）
   if (lastHr.parentElement !== markdown) return true;
 
-  // 分隔线之前的页面文字（跳过我们自己插的翻译钮、引用条）
+  // 分隔线之前的页面文字（跳过我们自己插的译文块、引用条；被译文顶替藏起来的原文照算）
   let before = '';
   for (let n = markdown.firstChild; n && n !== lastHr; n = n.nextSibling) {
-    if (n.nodeType === 1 && n.matches('.iwe-translate-btn, .iwe-quote')) continue;
+    if (n.nodeType === 1 && n.matches('[data-iwe-tr-out], .iwe-quote')) continue;
     before += n.textContent || '';
   }
   if (!sigBodies.has(fingerprint(before, false))) {

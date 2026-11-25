@@ -187,6 +187,7 @@
     };
     const onKey = (e) => {
       if (s.closed || (iweImageViewer && iweImageViewer.isOpen && iweImageViewer.isOpen())) return;
+      if (document.querySelector('.iwe-tr-menu.open')) return; // 翻译的语言菜单开着：键盘归它（Esc 只关菜单），见 98-translate.js
       if (e.key === 'Escape') { e.preventDefault(); e.stopPropagation(); close(); }
       else if (s.pager && (e.key === 'ArrowLeft' || e.key === 'ArrowRight') && !/INPUT|TEXTAREA/.test((e.target && e.target.tagName) || '')) {
         e.preventDefault(); s.pager.go(s.galleryAt + (e.key === 'ArrowLeft' ? -1 : 1));
