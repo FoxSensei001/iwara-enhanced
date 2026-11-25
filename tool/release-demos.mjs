@@ -1020,11 +1020,11 @@ const CSS = `
   .st-steps button { display: flex; align-items: center; gap: 7px; padding: 4px 6px 4px 4px; border: 0; border-radius: 999px; background: none; color: var(--iw-dim); cursor: pointer; font-size: 12.5px; white-space: nowrap; }
   .st-steps button:hover { background: var(--iw-chip); }
   .st-steps i { position: relative; width: 24px; height: 24px; display: grid; place-items: center; border-radius: 50%; border: 1px solid var(--iw-line); font: 600 11px/1 var(--sans); background: var(--iw-card); }
-  .st-steps i svg { display: none; }
+  .st-steps i svg.q { display: none; }
   .st-steps li.on button { color: var(--iw-tx); font-weight: 600; }
   .st-steps li.on i { background: var(--iw-ac); border-color: var(--iw-ac); color: #fff; }
   .st-steps li.ok i { border-color: var(--iw-ac); color: var(--iw-ac); }
-  .st-steps li.ok i span { display: none; } .st-steps li.ok i svg { display: block; }
+  .st-steps li.ok i span { display: none; } .st-steps li.ok i svg.q { display: block; }
   .st-strip { display: flex; align-items: center; gap: 8px; margin: -4px 0 14px; padding: 8px 12px; border-radius: 8px; background: var(--iw-card); border: 1px solid var(--iw-line); font-size: 12px; animation: dmIn .3s; }
   .st-strip .st-fn { font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 30%; }
   .st-strip .st-bar { flex: 1; min-width: 40px; }
@@ -1188,7 +1188,7 @@ const CSS = `
   /* 窄窗口：侧栏、面板改成上下排或盖在上面 */
   @container (max-width: 760px) {
     .iw-rail { display: none; }
-    .iw-ics > svg { display: none; }
+    .iw-ics > svg.q { display: none; }
     .sub-side { width: 190px; }
   }
   @container (max-width: 620px) {

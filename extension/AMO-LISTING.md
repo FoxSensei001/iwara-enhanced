@@ -12,13 +12,15 @@
 | Add-on URL | `iwara-enhanced` |
 | Categories | Photos, Music & Videos；Search Tools |
 | Support website | `https://github.com/FoxSensei001/iwara-enhanced/issues` |
-| Homepage | `https://foxsensei001.github.io/iwara-enhanced/` |
+| Homepage | `https://foxsensei001.github.io/iwara-enhanced/`（manifest 里的 `homepage_url` 会被自动填进来，要手动改成这个） |
 | License | MIT License |
 | This add-on is experimental | 不勾 |
 | Requires payment | 不勾 |
-| Tags | `iwara`、`video`、`search`、`translate`、`productivity` |
+| Tags | 只能从 AMO 给的列表里勾：`search`、`translate` |
 
-截图要求：不要出现任何成人内容（AMO 商品页面向所有人）。用下载页的演示窗口截，那里的视频、作者、评论都是编的；尺寸 1280×800。
+截图要求：不要出现任何成人内容（AMO 商品页面向所有人）。用下载页的演示窗口截，那里的视频、作者、评论都是编的；尺寸 1280×800。0.1.0 上传的 5 张：高级搜索（筛选面板展开）、创作工作台第 2 步、订阅页筛选、卡片预览、评论翻译，英文界面、浅色主题，缩略图上的 R-18 角标隐藏。
+
+图标：在「图像」里上传 `extension/icons/icon-128.png`，否则商品页显示 AMO 的默认图标。
 
 ## Summary（≤ 250 字符）
 

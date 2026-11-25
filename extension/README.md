@@ -91,4 +91,10 @@ npm run build:ext        # 先构建 user.js，再生成下面所有产物
 
 ## 给审核的说明（提交 AMO 时贴进 reviewer notes）
 
-> The only script, `iwara-enhanced.js`, is built from the attached source package (`npm ci && node build-extension.mjs --build`, see `extension/SOURCE-BUILD.md`). It runs in the page's MAIN world on iwara.tv / iwara.ai only, because it works with the site's own single-page app and API session; it uses no extension APIs and loads no remote code. The `Function("return this")` warning comes from lodash inside the bundled Milkdown editor (`@milkdown/kit`, MIT). Of the 17 `innerHTML` warnings, 4 are inside the bundled Milkdown/ProseMirror code; the other 13 only insert SVG icon markup — either built into the add-on, or copied from the site's own menu / button icons on the same page — never user-written or remote content. Data: only when the user clicks a Translate button is that one text block sent to Google Translate, hence `websiteContent`; nothing is sent to the developer.
+> Build from source: the only script, `iwara-enhanced.js`, is built from the attached source package with `npm ci && node build-extension.mjs --build` (Node 20+, any POSIX shell with `zip`; details in `extension/SOURCE-BUILD.md`). The result in `extension/dist-firefox/` is byte-identical to the submitted package.
+>
+> What it does: it runs in the page's MAIN world on iwara.tv / iwara.ai only, because it works with the site's own single-page app and API session. It uses no extension APIs and loads no remote code. Most features can be tested without an account; the creator studio needs a (free) Iwara login.
+>
+> Validator warnings: the `Function("return this")` warning comes from lodash inside the bundled Milkdown editor (`@milkdown/kit`, MIT). Of the `innerHTML` warnings, 4 are inside the bundled Milkdown/ProseMirror code; the rest only insert SVG icon markup, either built into the add-on or copied from the site's own menu / button icons on the same page, never user-written or remote content.
+>
+> Data: only when the user clicks a Translate button is that one text block sent to Google Translate, hence `websiteContent`; nothing is sent to the developer.
