@@ -1,6 +1,7 @@
 {
   "$comment": "发版托管设置，详见 extension/README.md。baseUrl 留空 = 不写任何更新地址、Chromium 扩展不检查更新。环境变量 IWE_RELEASE_BASE_URL 可临时覆盖。",
-  "baseUrl": "",
+  "baseUrl": "https://foxsensei001.github.io/iwara-enhanced",
   "downloadPage": "",
-  "firefoxChannel": "listed"
+  "firefoxChannel": "listed",
+  "firefoxListingUrl": ""
 }

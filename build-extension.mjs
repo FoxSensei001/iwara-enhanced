@@ -120,9 +120,12 @@ if (release.baseUrl) {
     chromium: { zip: release.url(files.chromiumZip), sha256: sha256(path.join(out, files.chromiumZip)), minVersion: chromium.minimum_chrome_version },
     firefox: release.firefoxChannel === 'unlisted'
       ? { channel: 'unlisted', id: gecko.id, xpi: release.url(files.xpi), updates: release.url('updates.json'), minVersion: gecko.strict_min_version }
-      : { channel: 'listed', id: gecko.id, minVersion: gecko.strict_min_version },
+      : { channel: 'listed', id: gecko.id, listing: release.firefoxListingUrl || undefined, minVersion: gecko.strict_min_version },
   };
   fs.writeFileSync(path.join(out, 'latest.json'), `${JSON.stringify(latest, null, 2)}\n`);
+  // 托管目录的首页：给人看的下载页（downloadPage 默认就指向这里）
+  const { releasePage } = await import('./tool/release-page.mjs');
+  fs.writeFileSync(path.join(out, 'index.html'), releasePage(latest));
   if (release.firefoxChannel === 'unlisted') {
     const updates = { addons: { [gecko.id]: { updates: [{
       version,

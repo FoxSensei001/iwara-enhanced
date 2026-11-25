@@ -29,8 +29,10 @@ npm run build:ext        # 先构建 user.js，再生成下面所有产物
 托管地址写在仓库根的 `release.config.json`：
 
 ```json
-{ "baseUrl": "https://<托管目录>", "downloadPage": "", "firefoxChannel": "listed" }
+{ "baseUrl": "https://foxsensei001.github.io/iwara-enhanced", "downloadPage": "", "firefoxChannel": "listed", "firefoxListingUrl": "" }
 ```
+
+托管方式：本仓库的 `gh-pages` 分支，内容只有发版文件，和源码历史无关。GitHub Pages 从这个分支的根目录发布，`baseUrl` 就是 Pages 地址。首页 `index.html` 是构建时用 `latest.json` 生成的下载页。`firefoxListingUrl` 填 AMO 上架后的商品页地址，下载页和 `latest.json` 会带上它。
 
 - `baseUrl` 留空（默认）时：不写 `@updateURL`，不写 `update_url`，Chromium 版不带后台检查，也不生成 `latest.json` / `updates.json`。临时试验可以用环境变量 `IWE_RELEASE_BASE_URL`、`IWE_FIREFOX_CHANNEL` 覆盖。
 - `downloadPage` 可选，填一个给人看的下载页（例如 Releases 页面）；留空时用 `baseUrl/`。
@@ -60,7 +62,11 @@ npm run build:ext        # 先构建 user.js，再生成下面所有产物
    - **公开上架**：在 AMO 开发者中心提交新版本，上传 `extension/release/iwara-enhanced-firefox-<版本>.zip`。问到是否用了打包 / 压缩工具时选「是」，并上传 `iwara-enhanced-source-<版本>.zip`；审核备注贴下面那段说明。也可以用命令行提交：`npx web-ext@8 sign --channel listed --source-dir extension/dist-firefox --upload-source-code extension/release/iwara-enhanced-source-<版本>.zip --api-key … --api-secret …`（首次提交还要加 `--amo-metadata`）。
    - **自分发**：`npx web-ext@8 sign --channel unlisted --source-dir extension/dist-firefox --artifacts-dir extension/release --upload-source-code extension/release/iwara-enhanced-source-<版本>.zip --api-key … --api-secret …`，再把签好的 xpi 改名为 `iwara-enhanced-<版本>.xpi`，放进 `extension/release/`。不放的话，`updates.json` 指向的文件不存在。
    - API 密钥在 AMO 账号的「管理 API 密钥」页面申请，只放在本机的环境变量里，不要写进仓库。
-5. 把 `extension/release/` 里的文件原样复制到托管目录（覆盖同名文件，旧版本的 zip / xpi 可以留着）并发布。公开上架时不需要上传 `firefox` 的 zip 和源码包。
+5. `npm run publish:pages`：把 `extension/release/` 里该公开的文件提交到本地的 `gh-pages` 分支，工作目录是 `extension/.pages/`。
+   - 未签名的 Firefox 包和源码包不会放上去；公开上架时 xpi 和 `updates.json` 也不放。
+   - 同名文件直接覆盖，旧版本的 zip / xpi 保留。
+   - 这一步不推送。检查无误后自己执行 `git push origin gh-pages`。
+   - 第一次推送后，到仓库 Settings → Pages 里把来源设为 `gh-pages` 分支的 `/ (root)`，以后不用再设。
 6. 自查：浏览器打开 `<baseUrl>/latest.json`，确认版本号是新的；在油猴里点「检查更新」看能否拉到。Chromium 版的检查不会立刻发生（每天最多一次）；想马上试，可以在 `chrome://extensions` 里刷新扩展，安装或刷新时会强制查一次。
 
 ## 权限与隐私

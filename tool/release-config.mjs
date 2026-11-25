@@ -13,8 +13,11 @@ export function loadReleaseConfig(root) {
   if (downloadPage && !/^https:\/\//.test(downloadPage)) throw new Error(`release.config.json 的 downloadPage 必须是 https:// 地址：${downloadPage}`);
   const firefoxChannel = process.env.IWE_FIREFOX_CHANNEL || cfg.firefoxChannel || 'listed';
   if (!['unlisted', 'listed'].includes(firefoxChannel)) throw new Error(`firefoxChannel 只能是 unlisted 或 listed：${firefoxChannel}`);
+  const firefoxListingUrl = String(cfg.firefoxListingUrl ?? '').trim(); // AMO 上架后的商品页，下载页和 latest.json 用
+  if (firefoxListingUrl && !/^https:\/\//.test(firefoxListingUrl)) throw new Error(`firefoxListingUrl 必须是 https:// 地址：${firefoxListingUrl}`);
   return {
     baseUrl,
+    firefoxListingUrl,
     firefoxChannel,
     downloadPage: downloadPage || (baseUrl ? `${baseUrl}/` : ''),
     url: (name) => (baseUrl ? `${baseUrl}/${name}` : ''),
