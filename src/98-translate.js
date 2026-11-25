@@ -75,6 +75,8 @@ function target() {
   return LANGS.some((l) => l[0] === v) ? v : env.lang === 'ja' ? 'ja' : env.lang === 'en' ? 'en' : uiLocale();
 }
 const base = (l) => String(l || '').toLowerCase().split(/[-_]/)[0];
+/** 同一种语言（中文分简繁：zh-TW 和 zh-CN 不算同一种，谷歌能互相转换） */
+const sameLang = (a, b) => base(a) === base(b) && (base(a) !== 'zh' || /tw|hk|hant/i.test(a) === /tw|hk|hant/i.test(b));
 function langName(code) {
   try { return new Intl.DisplayNames([uiLocale()], { type: 'language' }).of(code) || code; } catch { return code; }
 }
@@ -118,17 +120,11 @@ function isTarget(text, tl, withEnglish) {
 }
 
 /**
- * 这一组要不要给翻译按钮：整体不是界面语言；或者整体是、但夹着成句的外语行（公告常见「一段英文 + 一段中文」，
- * 按整体算汉字过半，以前就当成中文、不给按钮）。零星几个外文词（人名、梗）不算。点了只译外语那几行，见 prepare。
+ * 这一组要不要给翻译按钮：只要有字就给。以前按文字体系粗判「已经是界面语言就不给」，结果中文评论（繁体、粤语、夹着外语的）
+ * 都没有按钮；现在一律给，点了由谷歌判断，真的已经是目标语言就提示「已经是 XX」。
  */
-function wants(roots, tl) {
-  const all = roots.map((r) => r.textContent).join('\n');
-  if (!hasLetters(all)) return false;
-  if (!isTarget(all, tl, true)) return true;
-  for (const b of roots.flatMap(blocksOf)) {
-    for (const ln of (b.innerText || b.textContent).split('\n')) if (measure(ln).units >= 5 && !isTarget(ln, tl, true)) return true;
-  }
-  return false;
+function wants(roots) {
+  return hasLetters(roots.map((r) => r.textContent).join('\n'));
 }
 
 // ── 把块拆成要送去翻译的片段 ───────────────────────────────────────
@@ -205,7 +201,7 @@ function splitLong(text, max) {
 const MAX_Q = 4000;
 
 /** 一个块 → 若干行；要翻译的行带上要送出的片段 qs（已经是目标语言、没有字的行原样保留） */
-function prepare(block, tl) {
+function prepare(block, tl, force) {
   const map = [], lines = [];
   let cur = [];
   const push = () => {
@@ -214,7 +210,7 @@ function prepare(block, tl) {
     const start = map.length;
     const text = nodes.map((n) => n.textContent).join('');
     let qs = null, plain = false;
-    if (hasLetters(text) && !isTarget(text, tl, false)) {
+    if (hasLetters(text) && (force || !isTarget(text, tl, false))) {
       const html = encode(nodes, map).trim();
       if (html.length <= MAX_Q) qs = [html];
       else { qs = splitLong(text.trim(), MAX_Q).map(esc); plain = true; }
@@ -412,7 +408,10 @@ async function toggle(g, quiet) {
   if (g.state === 'loading' || g.state === 'same') return;
   if (g.state === 'on') { restore(g); return; }
   const tl = (g.tl = target());
-  const preps = g.ctx.roots(g.host).flatMap(blocksOf).map((b) => prepare(b, tl)).filter((p) => p.lines.some((ln) => ln.qs));
+  const blocks = g.ctx.roots(g.host).flatMap(blocksOf);
+  let preps = blocks.map((b) => prepare(b, tl)).filter((p) => p.lines.some((ln) => ln.qs));
+  // 粗判认为都已经是目标语言（比如中文评论）：别信它，全部送去让谷歌判断
+  if (!preps.length) preps = blocks.map((b) => prepare(b, tl, true)).filter((p) => p.lines.some((ln) => ln.qs));
   const qs = [];
   for (const p of preps) for (const ln of p.lines) if (ln.qs) { ln.qi = qs.length; qs.push(...ln.qs); }
   if (!qs.length) { same(g); return; }
@@ -422,7 +421,7 @@ async function toggle(g, quiet) {
     const res = await translateAll(qs, tl);
     if (g.run !== run) return;
     if (preps.some((p) => !p.block.isConnected || p.block.textContent !== p.text)) { setState(g, 'idle'); return; } // 等待期间原文变了
-    const langs = res.map((r) => r.lang).filter((l) => l && base(l) !== base(tl));
+    const langs = res.map((r) => r.lang).filter((l) => l && !sameLang(l, tl));
     if (!langs.length && res.every((r) => r.lang)) { same(g); return; } // 谷歌说全都已经是目标语言
     const count = new Map();
     for (const l of langs) count.set(l, (count.get(l) || 0) + 1);
@@ -724,7 +723,7 @@ body.dark .iwe-tr-menu{background:var(--body-dark,#24272d);border-color:rgba(255
           if (key !== g.key) {
             again = false; // 原文真的变了：译文作废，等用户再点
             g.key = key;
-            g.need = wants(ctx.roots(host), tl);
+            g.need = wants(ctx.roots(host));
             if (g.state !== 'idle') setState(g, 'idle');
           }
         }
