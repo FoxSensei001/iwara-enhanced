@@ -284,9 +284,10 @@ const env = {
 };
 // 和站点取法一致：localStorage.locale → 账号语言 → 英文。站点代码本想退到浏览器语言，但写成了 navigator.languagess（多一个 s），
 // 实际永远退到英文；这里跟着站点实际显示的走，不看浏览器语言（否则没登录时站点英文、插件中文。AI 站和主站的 localStorage 不互通，最容易碰上）
+const langOf = (userLocale) => { const l = String(userLocale || 'en').toLowerCase(); return l.startsWith('zh') ? 'zh' : l.startsWith('ja') ? 'ja' : 'en'; };
 function detectLang(userLocale) {
   const l = String(userLocale || 'en').toLowerCase();
-  env.lang = l.startsWith('zh') ? 'zh' : l.startsWith('ja') ? 'ja' : 'en';
+  env.lang = langOf(l);
   const hant = /zh-(tw|hk|mo)|hant/i.test(navigator.language);
   env.tagLang = l.startsWith('zh') ? (hant ? 'zh-TW' : 'zh-CN') : l.startsWith('ja') ? 'ja' : 'en';
 }
@@ -5067,8 +5068,22 @@ const site = (() => {
   function ctx() {
     return { path: location.pathname, search: new URLSearchParams(location.search), routeChanged: lastPath !== location.pathname + location.search, dark: isDark() };
   }
+  // 站点语言是在页面里直接切的（侧栏底部的语言选项），站点自己的字当场换了，我们挂上去的界面大多只画一次、不会跟着变，
+  // 留下中英混杂。切了就整页刷新一次，让所有界面按新语言重新生成。写 locale 的时机：手动切换、或拿到账号语言后补写——后者语言没变，不刷新。
+  function reloadOnLangSwitch() {
+    const f = localStorage.getItem('locale');
+    if (!f || langOf(f) === env.lang) return false;
+    try {
+      const last = +sessionStorage.getItem('iweLangReload') || 0;
+      if (Date.now() - last < 5000) return false; // 防止刷新后仍对不上时反复刷新
+      sessionStorage.setItem('iweLangReload', String(Date.now()));
+    } catch { /* 没有 sessionStorage 也照刷 */ }
+    location.reload();
+    return true;
+  }
   function run() {
     queued = false;
+    if (reloadOnLangSwitch()) return;
     const c = ctx();
     lastPath = location.pathname + location.search;
     for (const f of features) {
@@ -8658,21 +8673,21 @@ site.register('tagi18nMenu', {
 (() => {
   defineStrings(
     {
-      sb_lang: '语言', sb_rating: '评级', sb_theme: '主题',
+      sb_lang: '语言', sb_langNote: '切换语言会刷新页面', sb_rating: '评级', sb_theme: '主题',
       sb_rating_all: '全部', sb_rating_general: '普通', sb_rating_ecchi: '成人',
       sb_theme_system: '跟随系统', sb_theme_light: '白天', sb_theme_dark: '夜晚', sb_theme_auto_short: '自动',
       sb_recent: '最近', sb_recent_title: '最近', sb_recent_empty: '暂无帖子', sb_recent_failed: '加载失败',
       sb_col_thread: '主题', sb_col_posts: '发布', sb_col_views: '观看人数', sb_col_last: '最新发布', sb_by: '由', sb_last_page: '查看最后一页',
     },
     {
-      sb_lang: 'Language', sb_rating: 'Rating', sb_theme: 'Theme',
+      sb_lang: 'Language', sb_langNote: 'Switching language reloads the page', sb_rating: 'Rating', sb_theme: 'Theme',
       sb_rating_all: 'All', sb_rating_general: 'General', sb_rating_ecchi: 'Ecchi',
       sb_theme_system: 'System', sb_theme_light: 'Light', sb_theme_dark: 'Dark', sb_theme_auto_short: 'Auto',
       sb_recent: 'Recent', sb_recent_title: 'Recent', sb_recent_empty: 'No threads yet', sb_recent_failed: 'Failed to load',
       sb_col_thread: 'Thread', sb_col_posts: 'Posts', sb_col_views: 'Views', sb_col_last: 'Last post', sb_by: 'by', sb_last_page: 'Last page',
     },
     {
-      sb_lang: '言語', sb_rating: 'レーティング', sb_theme: 'テーマ',
+      sb_lang: '言語', sb_langNote: '言語を切り替えるとページが再読み込みされます', sb_rating: 'レーティング', sb_theme: 'テーマ',
       sb_rating_all: 'すべて', sb_rating_general: '一般', sb_rating_ecchi: '成人向け',
       sb_theme_system: 'システム', sb_theme_light: 'ライト', sb_theme_dark: 'ダーク', sb_theme_auto_short: '自動',
       sb_recent: '最近', sb_recent_title: '最近', sb_recent_empty: 'まだ投稿がありません', sb_recent_failed: '読み込みに失敗しました',
@@ -8742,7 +8757,7 @@ site.register('tagi18nMenu', {
     if (again) { if (toggle) closePopover(); else holdPopover(); return; } // 点同一个按钮 = 收起；悬停时已经开着就不动
     closePopover(true);
     document.querySelectorAll('.iwe-sb-pop.out').forEach((e) => e.remove());
-    popover = h('div.iwe-sb-pop', { role: 'menu', onpointerenter: holdPopover, onpointerleave: (e) => { if (e.pointerType === 'mouse') releasePopover(); } }, items.map((it) =>
+    popover = h('div.iwe-sb-pop', { role: 'menu', onpointerenter: holdPopover, onpointerleave: (e) => { if (e.pointerType === 'mouse') releasePopover(); } }, items.map((it) => it.note ? h('div.iwe-sb-note', { role: 'note' }, it.note) :
       h('button.iwe-sb-item' + (it.on ? '.on' : ''), { type: 'button', role: 'menuitemradio', 'aria-checked': String(!!it.on), onclick: () => { closePopover(); it.pick(); } },
         h('span.iwe-sb-ico', it.icon), h('span.iwe-sb-label', it.label), h('span.iwe-sb-check', it.on ? icon('check', 14) : null))));
     popover.dataset.for = anchor.dataset.kind;
@@ -8792,7 +8807,7 @@ site.register('tagi18nMenu', {
       b.dataset.kind = kind;
       return b;
     };
-    const lang = btn('lang', t('sb_lang'), () => (LANGS.map(([v, label]) => ({ label, icon: fa('globe', 16), on: current('locale') === v, pick: () => pickRadio('locale', v) }))));
+    const lang = btn('lang', t('sb_lang'), () => (LANGS.map(([v, label]) => ({ label, icon: fa('globe', 16), on: current('locale') === v, pick: () => pickRadio('locale', v) })).concat([{ note: t('sb_langNote') }])));
     const rating = btn('rating', t('sb_rating'), () => (RATINGS.map((v) => ({ label: t('sb_rating_' + v), icon: fa(RATING_ICON[v], 16), on: current('rating') === v, pick: () => pickRadio('rating', v) }))));
     const theme = btn('theme', t('sb_theme'), () => {
       const mode = themeMode();
@@ -8844,6 +8859,7 @@ html.iwe-sb-quiet .page > .menu.menu--open{visibility:hidden}
 .iwe-sb-pop.out{animation:iwe-sb-out .12s var(--ease) forwards;pointer-events:none}
 @media (prefers-reduced-motion:reduce){.iwe-sb-pop,.iwe-sb-pop.out{animation:none}}
 .iwe-sb-item{appearance:none;display:flex;align-items:center;gap:10px;width:100%;height:36px;padding:0 10px;border:0;border-radius:5px;background:none;color:inherit;font:inherit;text-align:left;cursor:pointer}
+.iwe-sb-note{padding:6px 10px 4px;margin-top:2px;border-top:1px solid var(--line,rgba(128,128,128,.25));font-size:12px;opacity:.65}
 .iwe-sb-item:hover{background:var(--sunk)}
 .iwe-sb-item.on{font-weight:600}
 .iwe-sb-ico{display:inline-flex;flex:none;color:var(--fg2)}
@@ -9864,6 +9880,8 @@ function target() {
   return LANGS.some((l) => l[0] === v) ? v : env.lang === 'ja' ? 'ja' : env.lang === 'en' ? 'en' : uiLocale();
 }
 const base = (l) => String(l || '').toLowerCase().split(/[-_]/)[0];
+/** 同一种语言（中文分简繁：zh-TW 和 zh-CN 不算同一种，谷歌能互相转换） */
+const sameLang = (a, b) => base(a) === base(b) && (base(a) !== 'zh' || /tw|hk|hant/i.test(a) === /tw|hk|hant/i.test(b));
 function langName(code) {
   try { return new Intl.DisplayNames([uiLocale()], { type: 'language' }).of(code) || code; } catch { return code; }
 }
@@ -9907,17 +9925,11 @@ function isTarget(text, tl, withEnglish) {
 }
 
 /**
- * 这一组要不要给翻译按钮：整体不是界面语言；或者整体是、但夹着成句的外语行（公告常见「一段英文 + 一段中文」，
- * 按整体算汉字过半，以前就当成中文、不给按钮）。零星几个外文词（人名、梗）不算。点了只译外语那几行，见 prepare。
+ * 这一组要不要给翻译按钮：只要有字就给。以前按文字体系粗判「已经是界面语言就不给」，结果中文评论（繁体、粤语、夹着外语的）
+ * 都没有按钮；现在一律给，点了由谷歌判断，真的已经是目标语言就提示「已经是 XX」。
  */
-function wants(roots, tl) {
-  const all = roots.map((r) => r.textContent).join('\n');
-  if (!hasLetters(all)) return false;
-  if (!isTarget(all, tl, true)) return true;
-  for (const b of roots.flatMap(blocksOf)) {
-    for (const ln of (b.innerText || b.textContent).split('\n')) if (measure(ln).units >= 5 && !isTarget(ln, tl, true)) return true;
-  }
-  return false;
+function wants(roots) {
+  return hasLetters(roots.map((r) => r.textContent).join('\n'));
 }
 
 // ── 把块拆成要送去翻译的片段 ───────────────────────────────────────
@@ -9994,7 +10006,7 @@ function splitLong(text, max) {
 const MAX_Q = 4000;
 
 /** 一个块 → 若干行；要翻译的行带上要送出的片段 qs（已经是目标语言、没有字的行原样保留） */
-function prepare(block, tl) {
+function prepare(block, tl, force) {
   const map = [], lines = [];
   let cur = [];
   const push = () => {
@@ -10003,7 +10015,7 @@ function prepare(block, tl) {
     const start = map.length;
     const text = nodes.map((n) => n.textContent).join('');
     let qs = null, plain = false;
-    if (hasLetters(text) && !isTarget(text, tl, false)) {
+    if (hasLetters(text) && (force || !isTarget(text, tl, false))) {
       const html = encode(nodes, map).trim();
       if (html.length <= MAX_Q) qs = [html];
       else { qs = splitLong(text.trim(), MAX_Q).map(esc); plain = true; }
@@ -10201,7 +10213,10 @@ async function toggle(g, quiet) {
   if (g.state === 'loading' || g.state === 'same') return;
   if (g.state === 'on') { restore(g); return; }
   const tl = (g.tl = target());
-  const preps = g.ctx.roots(g.host).flatMap(blocksOf).map((b) => prepare(b, tl)).filter((p) => p.lines.some((ln) => ln.qs));
+  const blocks = g.ctx.roots(g.host).flatMap(blocksOf);
+  let preps = blocks.map((b) => prepare(b, tl)).filter((p) => p.lines.some((ln) => ln.qs));
+  // 粗判认为都已经是目标语言（比如中文评论）：别信它，全部送去让谷歌判断
+  if (!preps.length) preps = blocks.map((b) => prepare(b, tl, true)).filter((p) => p.lines.some((ln) => ln.qs));
   const qs = [];
   for (const p of preps) for (const ln of p.lines) if (ln.qs) { ln.qi = qs.length; qs.push(...ln.qs); }
   if (!qs.length) { same(g); return; }
@@ -10211,7 +10226,7 @@ async function toggle(g, quiet) {
     const res = await translateAll(qs, tl);
     if (g.run !== run) return;
     if (preps.some((p) => !p.block.isConnected || p.block.textContent !== p.text)) { setState(g, 'idle'); return; } // 等待期间原文变了
-    const langs = res.map((r) => r.lang).filter((l) => l && base(l) !== base(tl));
+    const langs = res.map((r) => r.lang).filter((l) => l && !sameLang(l, tl));
     if (!langs.length && res.every((r) => r.lang)) { same(g); return; } // 谷歌说全都已经是目标语言
     const count = new Map();
     for (const l of langs) count.set(l, (count.get(l) || 0) + 1);
@@ -10513,7 +10528,7 @@ body.dark .iwe-tr-menu{background:var(--body-dark,#24272d);border-color:rgba(255
           if (key !== g.key) {
             again = false; // 原文真的变了：译文作废，等用户再点
             g.key = key;
-            g.need = wants(ctx.roots(host), tl);
+            g.need = wants(ctx.roots(host));
             if (g.state !== 'idle') setState(g, 'idle');
           }
         }
@@ -11028,7 +11043,7 @@ label.iwe-rules:not(.iwe-rules-row *){margin:8px 0 0}
   // 动态预览：轮播这条视频自己的那组缩略图（站点每条视频生成 numThumbnails 张，large 尺寸 870 宽、保持原比例），
   // 照应用里 AnimatedPreview 的做法。不用站点的 preview.webp——那是压扁进 220×160 的小动图，放大到封面尺寸
   // 怎么摆都是拉伸 + 发糊（用户 2026-11-24：「尽量不要拉伸，不好看」）。
-  // 帧一张接一张地预载（不一次性打出十几个请求），只轮到已经到手的帧；交叉淡入，1.1 秒一帧。
+  // （没有动图预览时才用这个：见 ensureAnimated 末尾）帧一张接一张地预载（不一次性打出十几个请求），只轮到已经到手的帧；交叉淡入，1.1 秒一帧。
   // 站外视频、不到 2 张缩略图、系统要求减少动效时不轮播，留静态封面。
   const SLIDE_MS = 1100;
   function stopSlides(s) { clearInterval(s.slideT); clearTimeout(s.slideStart); s.slideT = s.slideStart = null; s.slideGen = (s.slideGen || 0) + 1; }
@@ -11042,6 +11057,7 @@ label.iwe-rules:not(.iwe-rules-row *){margin:8px 0 0}
     s.animUrl = key;
     stopSlides(s);
     const gen = s.slideGen, fr = s.frame;
+    const runSlides = () => {
     const start = (+it.thumbnail || 0) % n;
     const pad = (i) => String(i).padStart(2, '0');
     // 第 0 帧就是封面本身（设了自定义封面的，封面之后接着放视频自己的缩略图）
@@ -11070,6 +11086,16 @@ label.iwe-rules:not(.iwe-rules-row *){margin:8px 0 0}
     // 先让人看清封面，再开始动
     const kick = () => { if (!s.slideT && !s.slideStart) s.slideStart = setTimeout(() => { s.slideStart = null; if (s.slideGen === gen) s.slideT = setInterval(step, SLIDE_MS); }, 700); };
     loadNext(0);
+    };
+    // 站点给了动图预览（file.animatedPreview）就优先放它：真·连续动画，比缩略图一张张切顺滑得多。
+    // 它是 220×160 的小图，按用户要求原样 fit（object-fit:contain）放在封面里，不改比例、不拉伸，周围是糊底；
+    // 没有 / 加载失败才退回缩略图轮播。
+    if (it.file.animatedPreview) {
+      const a = h('img.iwe-pv-anim', { alt: '', draggable: 'false', decoding: 'async' });
+      a.addEventListener('load', () => { if (s.slideGen !== gen) return; fr.after(a); fr.style.visibility = 'hidden'; requestAnimationFrame(() => a.classList.add('in')); }, { once: true });
+      a.addEventListener('error', () => { if (s.slideGen === gen) runSlides(); }, { once: true });
+      a.src = `${IMG}/original/${it.file.id}/preview.webp`;
+    } else runSlides();
   }
 
   // ── 封面 ──
@@ -11412,6 +11438,8 @@ body.dark .iwe-pv{--cp-bg:#2c313a;--cp-sunk:rgba(255,255,255,.06);--cp-line:rgba
 .iwe-pv-img.in{opacity:1}.iwe-pv-img.contain{object-fit:contain}
 .iwe-pv-slide{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;opacity:0;transition:opacity .45s ease;-webkit-user-drag:none}
 .iwe-pv-slide.in{opacity:1}
+.iwe-pv-anim{position:absolute;inset:0;width:100%;height:100%;object-fit:contain;opacity:0;transition:opacity .3s ease;-webkit-user-drag:none}
+.iwe-pv-anim.in{opacity:1}
 .iwe-pv-play{position:absolute;left:50%;top:50%;display:grid;place-items:center;width:56px;height:56px;margin:-28px 0 0 -28px;border-radius:50%;color:#fff;background:rgba(0,0,0,.42);-webkit-backdrop-filter:blur(8px);backdrop-filter:blur(8px);
   opacity:0;transform:scale(.85);transition:opacity .2s,transform .3s cubic-bezier(.22,1,.36,1);pointer-events:none}
 .iwe-pv-coverlink:hover .iwe-pv-play,.iwe-pv-coverlink:focus-visible .iwe-pv-play{opacity:1;transform:none}

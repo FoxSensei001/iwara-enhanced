@@ -301,7 +301,7 @@
   // 动态预览：轮播这条视频自己的那组缩略图（站点每条视频生成 numThumbnails 张，large 尺寸 870 宽、保持原比例），
   // 照应用里 AnimatedPreview 的做法。不用站点的 preview.webp——那是压扁进 220×160 的小动图，放大到封面尺寸
   // 怎么摆都是拉伸 + 发糊（用户 2026-11-24：「尽量不要拉伸，不好看」）。
-  // 帧一张接一张地预载（不一次性打出十几个请求），只轮到已经到手的帧；交叉淡入，1.1 秒一帧。
+  // （没有动图预览时才用这个：见 ensureAnimated 末尾）帧一张接一张地预载（不一次性打出十几个请求），只轮到已经到手的帧；交叉淡入，1.1 秒一帧。
   // 站外视频、不到 2 张缩略图、系统要求减少动效时不轮播，留静态封面。
   const SLIDE_MS = 1100;
   function stopSlides(s) { clearInterval(s.slideT); clearTimeout(s.slideStart); s.slideT = s.slideStart = null; s.slideGen = (s.slideGen || 0) + 1; }
@@ -315,6 +315,7 @@
     s.animUrl = key;
     stopSlides(s);
     const gen = s.slideGen, fr = s.frame;
+    const runSlides = () => {
     const start = (+it.thumbnail || 0) % n;
     const pad = (i) => String(i).padStart(2, '0');
     // 第 0 帧就是封面本身（设了自定义封面的，封面之后接着放视频自己的缩略图）
@@ -343,6 +344,16 @@
     // 先让人看清封面，再开始动
     const kick = () => { if (!s.slideT && !s.slideStart) s.slideStart = setTimeout(() => { s.slideStart = null; if (s.slideGen === gen) s.slideT = setInterval(step, SLIDE_MS); }, 700); };
     loadNext(0);
+    };
+    // 站点给了动图预览（file.animatedPreview）就优先放它：真·连续动画，比缩略图一张张切顺滑得多。
+    // 它是 220×160 的小图，按用户要求原样 fit（object-fit:contain）放在封面里，不改比例、不拉伸，周围是糊底；
+    // 没有 / 加载失败才退回缩略图轮播。
+    if (it.file.animatedPreview) {
+      const a = h('img.iwe-pv-anim', { alt: '', draggable: 'false', decoding: 'async' });
+      a.addEventListener('load', () => { if (s.slideGen !== gen) return; fr.after(a); fr.style.visibility = 'hidden'; requestAnimationFrame(() => a.classList.add('in')); }, { once: true });
+      a.addEventListener('error', () => { if (s.slideGen === gen) runSlides(); }, { once: true });
+      a.src = `${IMG}/original/${it.file.id}/preview.webp`;
+    } else runSlides();
   }
 
   // ── 封面 ──
@@ -685,6 +696,8 @@ body.dark .iwe-pv{--cp-bg:#2c313a;--cp-sunk:rgba(255,255,255,.06);--cp-line:rgba
 .iwe-pv-img.in{opacity:1}.iwe-pv-img.contain{object-fit:contain}
 .iwe-pv-slide{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;opacity:0;transition:opacity .45s ease;-webkit-user-drag:none}
 .iwe-pv-slide.in{opacity:1}
+.iwe-pv-anim{position:absolute;inset:0;width:100%;height:100%;object-fit:contain;opacity:0;transition:opacity .3s ease;-webkit-user-drag:none}
+.iwe-pv-anim.in{opacity:1}
 .iwe-pv-play{position:absolute;left:50%;top:50%;display:grid;place-items:center;width:56px;height:56px;margin:-28px 0 0 -28px;border-radius:50%;color:#fff;background:rgba(0,0,0,.42);-webkit-backdrop-filter:blur(8px);backdrop-filter:blur(8px);
   opacity:0;transform:scale(.85);transition:opacity .2s,transform .3s cubic-bezier(.22,1,.36,1);pointer-events:none}
 .iwe-pv-coverlink:hover .iwe-pv-play,.iwe-pv-coverlink:focus-visible .iwe-pv-play{opacity:1;transform:none}
