@@ -9,6 +9,8 @@
 // @description:ja  Iwara 公式サイトをもっと使いやすく。投稿を段階的に進められるクリエイタースタジオ、見たまま編集できる説明欄、日本語で探せるタグ選択、再利用できるテンプレート、すっきりしたコンテンツ管理などを追加します。
 // @match        https://www.iwara.tv/*
 // @match        https://iwara.tv/*
+// @match        https://www.iwara.ai/*
+// @match        https://iwara.ai/*
 // @run-at       document-start
 // @noframes
 // @grant        none

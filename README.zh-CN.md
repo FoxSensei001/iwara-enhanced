@@ -8,7 +8,7 @@
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 [![Tampermonkey](https://img.shields.io/badge/Tampermonkey%2FViolentmonkey-Compatible-brightgreen)](https://www.tampermonkey.net/)
-[![Platform](https://img.shields.io/badge/Platform-iwara.tv-blue)](https://www.iwara.tv)
+[![Platform](https://img.shields.io/badge/Platform-iwara.tv%20%7C%20iwara.ai-blue)](https://www.iwara.tv)
 
 </div>
 
@@ -18,7 +18,7 @@
 
 ## 🌟 介绍
 
-**Iwara Enhanced** 是一个为 iwara.tv 官方网站而设的社区用户脚本。它在保持原版页面完全可用的基础上，为内容创作者和浏览用户补充实用功能：更流畅的发布流程、更便利的内容管理和搜索体验。
+**Iwara Enhanced** 是一个为 iwara.tv 官方网站（以及它的 AI 站 iwara.ai）而设的社区用户脚本。它在保持原版页面完全可用的基础上，为内容创作者和浏览用户补充实用功能：更流畅的发布流程、更便利的内容管理和搜索体验。
 
 > [!NOTE]
 > 这是一个非官方社区项目，与 Iwara 官方无任何关联。
@@ -163,7 +163,7 @@
 
 1. 安装 [Tampermonkey](https://www.tampermonkey.net/)（Chrome、Firefox、Safari 等）或 [Violentmonkey](https://violentmonkey.github.io/)
 2. 在脚本管理器中新建脚本，粘贴 `dist/iwara-enhanced.user.js` 的全部内容
-3. 访问 iwara.tv，脚本自动激活
+3. 访问 iwara.tv 或 iwara.ai，脚本自动激活
 
 同一份源码的浏览器扩展版见 [extension/README.md](extension/README.md)。
 
@@ -176,7 +176,7 @@
 ## ✅ 能做什么、不能做什么
 
 **能做：**
-- 只在 `iwara.tv` 上运行，使用站点自身的登录状态和前端接口（上传、创建、编辑、删除、冷却、标签与用户推荐）
+- 只在 `iwara.tv` 和 `iwara.ai` 上运行（AI 站和主站是同一套前端、同一个接口），使用站点自身的登录状态和前端接口（上传、创建、编辑、删除、冷却、标签与用户推荐）
 - 模板和草稿存储在站点的 `localStorage`（键以 `iwe:` 开头）
 - 外部网络请求只有两类：从 jsDelivr 下载标签词库；点击翻译时，把你点击翻译的那段文字发送到谷歌翻译（`translate.googleapis.com`），不点击就不会发送
 - 其余请求都只发往站点自己的 `api.iwara.tv`
@@ -190,6 +190,7 @@
 - 视频一旦保存了自定义封面，无法改回视频截帧，只能更换其它图片（服务端限制）
 - 站点的详情接口有缓存：编辑保存后，其他用户可能需要等待一段时间才能看到更新；脚本会以保存结果为准，不会用旧值覆盖
 - 上传限制、码率表、格式说明等内容会跟随站点发布页的更新而变化；站点改版后脚本可能需要更新
+- iwara.tv 和 iwara.ai 的浏览器存储是分开的：设置、模板、草稿不会在两个站之间同步；模板可以用模板面板的导出 / 导入搬过去
 
 ## 👨‍💻 开发
 

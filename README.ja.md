@@ -2,13 +2,13 @@
 
 # Iwara Enhanced
 
-**iwara.tv をもっと見やすく、もっと投稿しやすくする非公式ユーザースクリプト。**
+**iwara.tv（と AI サイト iwara.ai）をもっと見やすく、もっと投稿しやすくする非公式ユーザースクリプト。**
 
 [English](README.md) · [简体中文](README.zh-CN.md) · **日本語**
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 [![Tampermonkey](https://img.shields.io/badge/Tampermonkey%2FViolentmonkey-Compatible-brightgreen)](https://www.tampermonkey.net/)
-[![Platform](https://img.shields.io/badge/Platform-iwara.tv-blue)](https://www.iwara.tv)
+[![Platform](https://img.shields.io/badge/Platform-iwara.tv%20%7C%20iwara.ai-blue)](https://www.iwara.tv)
 
 </div>
 
@@ -18,7 +18,7 @@
 
 ## 🌟 概要
 
-**Iwara Enhanced** は iwara.tv 公式サイト向けのコミュニティ製ユーザースクリプトです。元のページはそのまま使える状態を保ちつつ、投稿者と視聴者のための機能を足します：スムーズな投稿フロー、扱いやすい作品管理、便利な検索と閲覧。
+**Iwara Enhanced** は iwara.tv 公式サイト（と AI サイト iwara.ai）向けのコミュニティ製ユーザースクリプトです。元のページはそのまま使える状態を保ちつつ、投稿者と視聴者のための機能を足します：スムーズな投稿フロー、扱いやすい作品管理、便利な検索と閲覧。
 
 > [!NOTE]
 > これは非公式のコミュニティプロジェクトで、Iwara 公式とは一切関係ありません。
@@ -163,7 +163,7 @@
 
 1. [Tampermonkey](https://www.tampermonkey.net/)（Chrome・Firefox・Safari など）または [Violentmonkey](https://violentmonkey.github.io/) をインストール
 2. スクリプトマネージャーで新規スクリプトを作成し、`dist/iwara-enhanced.user.js` の内容をすべて貼り付け
-3. iwara.tv を開くと自動で有効になります
+3. iwara.tv または iwara.ai を開くと自動で有効になります
 
 同じソースのブラウザー拡張版については [extension/README.md](extension/README.md) を参照してください。
 
@@ -178,7 +178,7 @@
 ## ✅ できること・できないこと
 
 **できること：**
-- `iwara.tv` 上でのみ動作し、サイト自身のログイン状態とフロントエンド API（アップロード・作成・編集・削除・クールダウン・タグとユーザーの候補）を使います
+- `iwara.tv` と `iwara.ai` 上でのみ動作し（AI サイトは同じフロントエンド・同じ API です）、サイト自身のログイン状態とフロントエンド API（アップロード・作成・編集・削除・クールダウン・タグとユーザーの候補）を使います
 - テンプレートと下書きはサイトの `localStorage`（キーは `iwe:` で始まる）に保存します
 - 外部への通信は 2 種類だけ：jsDelivr からのタグ辞書のダウンロードと、翻訳ボタンを押したときにその文章を Google 翻訳（`translate.googleapis.com`）へ送ること。押さなければ送信されません
 - それ以外のリクエストはすべてサイト自身の `api.iwara.tv` へ送られます
@@ -192,6 +192,7 @@
 - 動画に独自のカバーを一度保存すると、動画のフレームには戻せず、別の画像への差し替えのみ可能です（サーバー側の制限）
 - サイトの詳細 API はキャッシュされます。編集を保存しても、他のユーザーに反映されるまで時間がかかることがあります。スクリプトは保存結果を正として、古い値で上書きしません
 - アップロード制限・ビットレート表・形式の説明などはサイトの投稿ページに合わせて変わります。サイトが改修されるとスクリプトの更新が必要になる場合があります
+- iwara.tv と iwara.ai はブラウザーのストレージが別なので、設定・テンプレート・下書きは両サイト間で共有されません。テンプレートはテンプレートパネルのエクスポート / インポートで移せます
 
 ## 👨‍💻 開発
 

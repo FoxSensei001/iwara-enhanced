@@ -51,7 +51,7 @@ const api = (() => {
     const refresh = localStorage.getItem('token');
     if (!refresh) throw new ApiError(401, { message: 'login' });
     pending = (async () => {
-      const r = await fetch(API + '/user/token', { method: 'POST', headers: { Authorization: 'Bearer ' + refresh } });
+      const r = await fetch(API + '/user/token', { method: 'POST', headers: { Authorization: 'Bearer ' + refresh, 'X-Site': location.hostname } });
       const j = await r.json().catch(() => ({}));
       if (!r.ok || !j.accessToken) throw new ApiError(r.status || 401, { message: 'login' });
       access = j.accessToken;
@@ -66,7 +66,8 @@ const api = (() => {
   }
 
   async function call(path, { method = 'GET', body, host = API, auth = true } = {}) {
-    // 与当前页面域名一致（www.iwara.tv 或 iwara.tv）
+    // 与当前页面域名一致：主站（www.iwara.tv / iwara.tv）和 AI 站（www.iwara.ai / iwara.ai）是同一套前端、同一个 api.iwara.tv，
+    // 只靠这个头区分站点（站点自己的请求封装也是：发往 api.iwara.tv 的一律带，发往 files.iwara.tv 的上传不带）
     const headers = { 'X-Site': location.hostname };
     if (auth) headers.Authorization = 'Bearer ' + (await token());
     if (body !== undefined) headers['Content-Type'] = 'application/json';

@@ -9,6 +9,8 @@
 // @description:ja  Iwara 公式サイトをもっと使いやすく。投稿を段階的に進められるクリエイタースタジオ、見たまま編集できる説明欄、日本語で探せるタグ選択、再利用できるテンプレート、すっきりしたコンテンツ管理などを追加します。
 // @match        https://www.iwara.tv/*
 // @match        https://iwara.tv/*
+// @match        https://www.iwara.ai/*
+// @match        https://iwara.ai/*
 // @run-at       document-start
 // @noframes
 // @grant        none
@@ -440,7 +442,7 @@ const api = (() => {
     const refresh = localStorage.getItem('token');
     if (!refresh) throw new ApiError(401, { message: 'login' });
     pending = (async () => {
-      const r = await fetch(API + '/user/token', { method: 'POST', headers: { Authorization: 'Bearer ' + refresh } });
+      const r = await fetch(API + '/user/token', { method: 'POST', headers: { Authorization: 'Bearer ' + refresh, 'X-Site': location.hostname } });
       const j = await r.json().catch(() => ({}));
       if (!r.ok || !j.accessToken) throw new ApiError(r.status || 401, { message: 'login' });
       access = j.accessToken;
@@ -455,7 +457,8 @@ const api = (() => {
   }
 
   async function call(path, { method = 'GET', body, host = API, auth = true } = {}) {
-    // 与当前页面域名一致（www.iwara.tv 或 iwara.tv）
+    // 与当前页面域名一致：主站（www.iwara.tv / iwara.tv）和 AI 站（www.iwara.ai / iwara.ai）是同一套前端、同一个 api.iwara.tv，
+    // 只靠这个头区分站点（站点自己的请求封装也是：发往 api.iwara.tv 的一律带，发往 files.iwara.tv 的上传不带）
     const headers = { 'X-Site': location.hostname };
     if (auth) headers.Authorization = 'Bearer ' + (await token());
     if (body !== undefined) headers['Content-Type'] = 'application/json';
@@ -1302,7 +1305,7 @@ function findMentions(state, withCaret = false) {
   return out;
 }
 // @用户名 显示成昵称：昵称和站内链接的作品名共用一份缓存（键是个人页网址，走同一个轻量接口）
-const profileHref = (name) => 'https://www.iwara.tv/profile/' + name;
+const profileHref = (name) => location.origin + '/profile/' + name;
 function mentionNick(name) { const e = linkTitles.get(profileHref(name)); return e && e.state === 'ok' ? e.title : null; }
 /** 显示成昵称的 @提及：原文还是 @用户名（站点只认这个），编辑区里藏起来、前面放一个昵称块，整块进退、整块删。 */
 const findChips = (state) => findMentions(state, true).filter((m) => mentionNick(m.name));
@@ -1319,7 +1322,8 @@ function findSlots(doc) {
 
 // ── 链接 ──
 // 站内链接（视频 / 图片 / 用户 / 播放列表 / 论坛帖）用站点的轻量接口换成作品名，和 App 里正文的显示一致。
-const IWARA_LINK_RE = /^https?:\/\/(?:www\.)?iwara\.tv\/(video|image|profile|playlist|forum)\/([^/\s?#]+)(?:\/([^/\s?#]+))?/i;
+// 主站和 AI 站的链接都认：/light/* 接口不分站点（X-Site 填哪个站都能取到另一个站的作品名，实测）。
+const IWARA_LINK_RE = /^https?:\/\/(?:www\.)?iwara\.(?:tv|ai)\/(video|image|profile|playlist|forum)\/([^/\s?#]+)(?:\/([^/\s?#]+))?/i;
 const LINK_TYPE_ICON = { video: 'film', image: 'picture', profile: 'user', playlist: 'list', forum: 'chat' };
 function iwaraLink(href) {
   const m = String(href || '').match(IWARA_LINK_RE);
@@ -1742,7 +1746,7 @@ function mdEditor({ value = '', placeholder = '', maxLength = 50000, onChange, s
       handleClick(v, pos, e) {
         if (e.metaKey || e.ctrlKey) {
           const m = findMentions(v.state).find((x) => pos >= x.from && pos <= x.to);
-          if (m) { window.open('https://www.iwara.tv/profile/' + m.name, '_blank', 'noopener'); return true; }
+          if (m) { window.open(profileHref(m.name), '_blank', 'noopener'); return true; }
           const l = findLinks(v.state.doc).find((x) => pos >= x.from && pos <= x.to);
           if (l && /^https?:/.test(l.href)) { window.open(l.href, '_blank', 'noopener'); return true; }
         }
@@ -3615,7 +3619,7 @@ async function mountWizard(host, { kind, editId, app }) {
         return [key, row, small, text];
       });
     const agree = !svc.isStaff && h('label.agree', { onclick: (e) => { if (e.target.closest('a')) return; e.preventDefault(); draft.agreed = !draft.agreed; changed(); } },
-      h('span.box', icon('check', 13)), h('span', t('rules'), ' ', h('a', { href: 'https://www.iwara.tv/rules', target: '_blank', rel: 'noopener', style: { textDecoration: 'underline', textUnderlineOffset: '3px' } }, t('rulesLink'))));
+      h('span.box', icon('check', 13)), h('span', t('rules'), ' ', h('a', { href: location.origin + '/rules', target: '_blank', rel: 'noopener', style: { textDecoration: 'underline', textUnderlineOffset: '3px' } }, t('rulesLink'))));
 
     function draw() {
       const c = checks();
@@ -4666,8 +4670,8 @@ function helpPages() {
     { key: 'editor', icon: 'pencil', title: L.editor, pages: [
       { nav: L.link, title: L.link, text: L.linkTxt, build: () => h('div.h-demo',
         pair(h('span.src', t('hpDemoMd')), h('span.lk', t('hpDemoLinkText'))),
-        pair(h('span.src', 'https://www.iwara.tv/video/…␣'), iwLink(t('hpDemoFetching'), true)),
-        pair(h('span.src', 'https://www.iwara.tv/video/…'), iwLink(t('hpDemoTitle')))) },
+        pair(h('span.src', location.origin + '/video/…␣'), iwLink(t('hpDemoFetching'), true)),
+        pair(h('span.src', location.origin + '/video/…'), iwLink(t('hpDemoTitle')))) },
       { nav: L.mention, title: L.mention, text: L.mentionTxt, build: () => h('div.h-demo',
         pair(h('span.src', '@exam'), h('span', h('span.lk', '@example_user'), ' ', h('span', { style: { color: 'var(--fg3)' } }, t('hpDemoCmd'))))) },
       { key: 'format', nav: L.format, title: L.format, doc: () => mdHelpDoc(L) },
@@ -12026,10 +12030,11 @@ body.dark footer.footer{background-color:#282c34!important}
       const block = md.closest('.block');
       if (!block) return;
       // 大标题：用站点自己的标题样式（和「Trending videos / 订阅」同一套 class），插在公告行的上方
+      // 只有一个：没登录 / 非会员时站点会在标题和公告行之间再插一行广告，这时把已有的标题挪回公告行正上方，不能再插一个（否则出现两个「公告」，上面那个顶着广告）
       const row = block.closest('.row');
-      if (row && !(row.previousElementSibling && row.previousElementSibling.hasAttribute('data-iwe-news-h'))) {
-        const hd = h('div.text.mt-2.mb-2.text--h2.text--bold', { 'data-iwe-news-h': '' }, t('newsLabel'));
-        row.parentElement.insertBefore(hd, row);
+      if (row) {
+        const hd = document.querySelector('[data-iwe-news-h]') || h('div.text.mt-2.mb-2.text--h2.text--bold', { 'data-iwe-news-h': '' }, t('newsLabel'));
+        if (row.previousElementSibling !== hd) row.parentElement.insertBefore(hd, row);
       }
       const sig = md.textContent.length + ':' + (md.querySelector('img') || {}).src;
       if (block.__iweNews === sig) return;

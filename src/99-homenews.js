@@ -133,10 +133,11 @@
       const block = md.closest('.block');
       if (!block) return;
       // 大标题：用站点自己的标题样式（和「Trending videos / 订阅」同一套 class），插在公告行的上方
+      // 只有一个：没登录 / 非会员时站点会在标题和公告行之间再插一行广告，这时把已有的标题挪回公告行正上方，不能再插一个（否则出现两个「公告」，上面那个顶着广告）
       const row = block.closest('.row');
-      if (row && !(row.previousElementSibling && row.previousElementSibling.hasAttribute('data-iwe-news-h'))) {
-        const hd = h('div.text.mt-2.mb-2.text--h2.text--bold', { 'data-iwe-news-h': '' }, t('newsLabel'));
-        row.parentElement.insertBefore(hd, row);
+      if (row) {
+        const hd = document.querySelector('[data-iwe-news-h]') || h('div.text.mt-2.mb-2.text--h2.text--bold', { 'data-iwe-news-h': '' }, t('newsLabel'));
+        if (row.previousElementSibling !== hd) row.parentElement.insertBefore(hd, row);
       }
       const sig = md.textContent.length + ':' + (md.querySelector('img') || {}).src;
       if (block.__iweNews === sig) return;

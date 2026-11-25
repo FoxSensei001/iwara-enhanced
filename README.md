@@ -2,13 +2,13 @@
 
 # Iwara Enhanced
 
-**An unofficial userscript that makes iwara.tv nicer to browse and easier to publish on.**
+**An unofficial userscript that makes iwara.tv (and its AI site iwara.ai) nicer to browse and easier to publish on.**
 
 **English** · [简体中文](README.zh-CN.md) · [日本語](README.ja.md)
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 [![Tampermonkey](https://img.shields.io/badge/Tampermonkey%2FViolentmonkey-Compatible-brightgreen)](https://www.tampermonkey.net/)
-[![Platform](https://img.shields.io/badge/Platform-iwara.tv-blue)](https://www.iwara.tv)
+[![Platform](https://img.shields.io/badge/Platform-iwara.tv%20%7C%20iwara.ai-blue)](https://www.iwara.tv)
 
 </div>
 
@@ -18,7 +18,7 @@
 
 ## 🌟 About
 
-**Iwara Enhanced** is a community userscript for the official iwara.tv website. The original pages keep working exactly as before; the script adds what creators and viewers keep reaching for: a smoother publishing flow, easier content management, and better search and browsing.
+**Iwara Enhanced** is a community userscript for the official iwara.tv website and its AI site iwara.ai. The original pages keep working exactly as before; the script adds what creators and viewers keep reaching for: a smoother publishing flow, easier content management, and better search and browsing.
 
 > [!NOTE]
 > This is an unofficial community project and is not affiliated with Iwara.
@@ -163,7 +163,7 @@ The video and image upload, edit and manage pages become one step-by-step studio
 
 1. Install [Tampermonkey](https://www.tampermonkey.net/) (Chrome, Firefox, Safari…) or [Violentmonkey](https://violentmonkey.github.io/)
 2. Create a new script in the manager and paste the whole of `dist/iwara-enhanced.user.js`
-3. Open iwara.tv — the script activates automatically
+3. Open iwara.tv or iwara.ai — the script activates automatically
 
 A browser-extension build of the same code is described in [extension/README.md](extension/README.md).
 
@@ -176,7 +176,7 @@ A browser-extension build of the same code is described in [extension/README.md]
 ## ✅ What it does and doesn't do
 
 **Does:**
-- Runs only on `iwara.tv`, using the site's own login and front-end APIs (upload, create, edit, delete, cooldowns, tag and user suggestions)
+- Runs only on `iwara.tv` and `iwara.ai` (the AI site runs the same front end against the same API), using the site's own login and front-end APIs (upload, create, edit, delete, cooldowns, tag and user suggestions)
 - Stores templates and drafts in the site's `localStorage` (keys start with `iwe:`)
 - Makes only two kinds of outside requests: downloading the tag dictionary from jsDelivr, and — only when you click translate — sending that text to Google Translate (`translate.googleapis.com`)
 - Everything else goes to the site's own `api.iwara.tv`
@@ -190,6 +190,7 @@ A browser-extension build of the same code is described in [extension/README.md]
 - Once a video has a custom cover saved, it can't go back to a video frame — only to another image (server limitation)
 - The site caches detail responses: after you save an edit, other people may see the update only after a while; the script trusts the save result and never overwrites it with stale data
 - Upload limits, bitrate tables and format notes follow the site's upload page; if the site changes, the script may need an update
+- iwara.tv and iwara.ai keep separate browser storage, so settings, templates and drafts don't carry over between them; use the template panel's export / import to move templates
 
 ## 👨‍💻 Development
 

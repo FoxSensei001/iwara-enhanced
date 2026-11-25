@@ -6,7 +6,7 @@
   "homepage_url": "https://github.com/FoxSensei001/LoveIwara",
   "content_scripts": [
     {
-      "matches": ["https://www.iwara.tv/*", "https://iwara.tv/*"],
+      "matches": ["https://www.iwara.tv/*", "https://iwara.tv/*", "https://www.iwara.ai/*", "https://iwara.ai/*"],
       "js": ["iwara-enhanced.js"],
       "run_at": "document_start",
       "world": "MAIN"

@@ -169,8 +169,8 @@ function helpPages() {
     { key: 'editor', icon: 'pencil', title: L.editor, pages: [
       { nav: L.link, title: L.link, text: L.linkTxt, build: () => h('div.h-demo',
         pair(h('span.src', t('hpDemoMd')), h('span.lk', t('hpDemoLinkText'))),
-        pair(h('span.src', 'https://www.iwara.tv/video/…␣'), iwLink(t('hpDemoFetching'), true)),
-        pair(h('span.src', 'https://www.iwara.tv/video/…'), iwLink(t('hpDemoTitle')))) },
+        pair(h('span.src', location.origin + '/video/…␣'), iwLink(t('hpDemoFetching'), true)),
+        pair(h('span.src', location.origin + '/video/…'), iwLink(t('hpDemoTitle')))) },
       { nav: L.mention, title: L.mention, text: L.mentionTxt, build: () => h('div.h-demo',
         pair(h('span.src', '@exam'), h('span', h('span.lk', '@example_user'), ' ', h('span', { style: { color: 'var(--fg3)' } }, t('hpDemoCmd'))))) },
       { key: 'format', nav: L.format, title: L.format, doc: () => mdHelpDoc(L) },

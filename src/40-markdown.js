@@ -160,7 +160,7 @@ function findMentions(state, withCaret = false) {
   return out;
 }
 // @用户名 显示成昵称：昵称和站内链接的作品名共用一份缓存（键是个人页网址，走同一个轻量接口）
-const profileHref = (name) => 'https://www.iwara.tv/profile/' + name;
+const profileHref = (name) => location.origin + '/profile/' + name;
 function mentionNick(name) { const e = linkTitles.get(profileHref(name)); return e && e.state === 'ok' ? e.title : null; }
 /** 显示成昵称的 @提及：原文还是 @用户名（站点只认这个），编辑区里藏起来、前面放一个昵称块，整块进退、整块删。 */
 const findChips = (state) => findMentions(state, true).filter((m) => mentionNick(m.name));
@@ -177,7 +177,8 @@ function findSlots(doc) {
 
 // ── 链接 ──
 // 站内链接（视频 / 图片 / 用户 / 播放列表 / 论坛帖）用站点的轻量接口换成作品名，和 App 里正文的显示一致。
-const IWARA_LINK_RE = /^https?:\/\/(?:www\.)?iwara\.tv\/(video|image|profile|playlist|forum)\/([^/\s?#]+)(?:\/([^/\s?#]+))?/i;
+// 主站和 AI 站的链接都认：/light/* 接口不分站点（X-Site 填哪个站都能取到另一个站的作品名，实测）。
+const IWARA_LINK_RE = /^https?:\/\/(?:www\.)?iwara\.(?:tv|ai)\/(video|image|profile|playlist|forum)\/([^/\s?#]+)(?:\/([^/\s?#]+))?/i;
 const LINK_TYPE_ICON = { video: 'film', image: 'picture', profile: 'user', playlist: 'list', forum: 'chat' };
 function iwaraLink(href) {
   const m = String(href || '').match(IWARA_LINK_RE);
@@ -600,7 +601,7 @@ function mdEditor({ value = '', placeholder = '', maxLength = 50000, onChange, s
       handleClick(v, pos, e) {
         if (e.metaKey || e.ctrlKey) {
           const m = findMentions(v.state).find((x) => pos >= x.from && pos <= x.to);
-          if (m) { window.open('https://www.iwara.tv/profile/' + m.name, '_blank', 'noopener'); return true; }
+          if (m) { window.open(profileHref(m.name), '_blank', 'noopener'); return true; }
           const l = findLinks(v.state.doc).find((x) => pos >= x.from && pos <= x.to);
           if (l && /^https?:/.test(l.href)) { window.open(l.href, '_blank', 'noopener'); return true; }
         }

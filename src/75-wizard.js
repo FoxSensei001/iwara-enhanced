@@ -570,7 +570,7 @@ async function mountWizard(host, { kind, editId, app }) {
         return [key, row, small, text];
       });
     const agree = !svc.isStaff && h('label.agree', { onclick: (e) => { if (e.target.closest('a')) return; e.preventDefault(); draft.agreed = !draft.agreed; changed(); } },
-      h('span.box', icon('check', 13)), h('span', t('rules'), ' ', h('a', { href: 'https://www.iwara.tv/rules', target: '_blank', rel: 'noopener', style: { textDecoration: 'underline', textUnderlineOffset: '3px' } }, t('rulesLink'))));
+      h('span.box', icon('check', 13)), h('span', t('rules'), ' ', h('a', { href: location.origin + '/rules', target: '_blank', rel: 'noopener', style: { textDecoration: 'underline', textUnderlineOffset: '3px' } }, t('rulesLink'))));
 
     function draw() {
       const c = checks();
