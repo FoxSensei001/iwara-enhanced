@@ -8,7 +8,15 @@ import { build } from 'esbuild';
 
 const root = path.dirname(fileURLToPath(import.meta.url));
 const src = path.join(root, 'src');
-const header = fs.readFileSync(path.join(src, '00-header.txt'), 'utf8').trimEnd();
+// 油猴自动更新地址不写死在脚本头里：配了 release.config.json 的 baseUrl 才插入（详见 extension/README.md）
+const { loadReleaseConfig } = await import('./tool/release-config.mjs');
+const release = loadReleaseConfig(root);
+let header = fs.readFileSync(path.join(src, '00-header.txt'), 'utf8').trimEnd();
+if (/@(update|download)URL/.test(header)) throw new Error('00-header.txt 里别手写 @updateURL / @downloadURL，改 release.config.json 的 baseUrl');
+if (release.baseUrl && !process.env.IWE_ONLY) {
+  header = header.replace(/^\/\/ ==\/UserScript==$/m,
+    `// @updateURL    ${release.url('iwara-enhanced.meta.js')}\n// @downloadURL  ${release.url('iwara-enhanced.user.js')}\n// ==/UserScript==`);
+}
 const vendor = await build({
   entryPoints: [path.join(root, 'vendor', 'milkdown.js')],
   bundle: true, format: 'iife', globalName: 'MK', minify: true, write: false, target: 'es2020', legalComments: 'inline',

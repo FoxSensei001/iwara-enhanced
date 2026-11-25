@@ -1,2 +1,4 @@
 dist/
 *.zip
+release/
+dist-firefox/
