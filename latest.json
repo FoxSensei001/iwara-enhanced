@@ -10,7 +10,7 @@
   },
   "chromium": {
     "zip": "https://foxsensei001.github.io/iwara-enhanced/iwara-enhanced-chromium-0.1.0.zip",
-    "sha256": "231013476077023c62e61158feba5fd5df0a7a813d210917802c65350d3114cb",
+    "sha256": "c39d27c1245ea4ee00dd39e2104e00b6d16d0ee7da3d4f948cbd606eb346a94e",
     "minVersion": "111"
   },
   "firefox": {
