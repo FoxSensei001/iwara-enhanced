@@ -69,6 +69,8 @@ npm run build:ext        # 先构建 user.js，再生成下面所有产物
 1. 改 `src/00-header.txt` 的 `@version`。
 2. `npm run build:ext`：构建自带的检查必须全过，最后一行确认版本号。
 3. 校验 Firefox 包：`npx web-ext@8 lint --source-dir extension/dist-firefox`（自分发时加 `--self-hosted`，否则 `update_url` 会报错）。现状是 0 errors、18 warnings，都是已知项（见下面「给审核的说明」）。
+   再把源码包解压到一个空目录，照 `SOURCE-BUILD.md` 执行 `npm ci && node build-extension.mjs --build`，确认退出码为 0，生成的 `extension/dist-firefox/` 和 firefox 包里的文件逐字节相同。审核员就是这么重建的，构建报错会被退回。
+   商品页文案和隐私政策见 [AMO-LISTING.md](AMO-LISTING.md)。
 4. Firefox（二选一）：
    - **公开上架**：在 AMO 开发者中心提交新版本，上传 `extension/release/iwara-enhanced-firefox-<版本>.zip`。问到是否用了打包 / 压缩工具时选「是」，并上传 `iwara-enhanced-source-<版本>.zip`；审核备注贴下面那段说明。也可以用命令行提交：`npx web-ext@8 sign --channel listed --source-dir extension/dist-firefox --upload-source-code extension/release/iwara-enhanced-source-<版本>.zip --api-key … --api-secret …`（首次提交还要加 `--amo-metadata`）。
    - **自分发**：`npx web-ext@8 sign --channel unlisted --source-dir extension/dist-firefox --artifacts-dir extension/release --upload-source-code extension/release/iwara-enhanced-source-<版本>.zip --api-key … --api-secret …`，再把签好的 xpi 改名为 `iwara-enhanced-<版本>.xpi`，放进 `extension/release/`。不放的话，`updates.json` 指向的文件不存在。

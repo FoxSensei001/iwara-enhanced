@@ -127,7 +127,9 @@ if (release.baseUrl) {
   const { releasePage } = await import('./tool/release-page.mjs');
   fs.writeFileSync(path.join(out, 'index.html'), releasePage(latest, { repoUrl: release.repoUrl, baseUrl: release.baseUrl }));
   // 下载页用的字体（Geist，OFL）、截图和图标，和页面放在同一目录
-  for (const f of fs.readdirSync(path.join(ext, 'page'))) fs.copyFileSync(path.join(ext, 'page', f), path.join(out, f));
+  // 源码包里没有 extension/page（审核只需重建扩展脚本），这时跳过，不能让审核按说明构建时报错
+  const pageDir = path.join(ext, 'page');
+  if (fs.existsSync(pageDir)) for (const f of fs.readdirSync(pageDir)) fs.copyFileSync(path.join(pageDir, f), path.join(out, f));
   if (fs.existsSync(path.join(ext, 'icons'))) {
     fs.copyFileSync(path.join(ext, 'icons', 'icon-128.png'), path.join(out, 'icon.png'));
     fs.copyFileSync(path.join(ext, 'icons', 'icon-32.png'), path.join(out, 'favicon.png'));
