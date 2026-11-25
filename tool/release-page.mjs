@@ -4,7 +4,9 @@
 // - 推荐装法：油猴脚本（各浏览器、手机）和 Firefox 版（上架后），两者都会自动更新；Chrome 手动加载只作备选
 // - 安装引导每步一句话，配照真实界面画的示意图（要点的地方高亮），按访客的浏览器 / 系统显示对应的步骤
 // - 不开脚本时显示中文和桌面 Chrome 的步骤，所有链接照常可用
-// 截图来自 docs/images/*.png，裁掉外层标题、只留浏览器窗口，转成 jpg（重新生成见 extension/README.md）。
+// - 功能展示是可以直接点的迷你 Iwara 窗口（tool/release-demos.mjs），不再用截图轮播；shot-studio.jpg 只用作分享预览图
+import { buildDemos } from './release-demos.mjs';
+
 const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]);
 // 一段文字的三种语言（参数是已经安全的 HTML 片段）
 const L = (zh, en, ja) => `<span data-l="zh">${zh}</span><span data-l="en">${en}</span><span data-l="ja">${ja}</span>`;
@@ -40,22 +42,6 @@ const P = {
   reload: '<path d="M20 12a8 8 0 1 1-2.3-5.7L20 8.6M20 4v4.6h-4.6"/>',
 };
 const ico = (name, size = 16, sw = 1.6, cls = '') => `<svg class="i${cls ? ' ' + cls : ''}" width="${size}" height="${size}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="${sw}" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${P[name]}</svg>`;
-
-// 截图：图片文件、宽高（防跳动）、标题与说明
-const SHOTS = [
-  { id: 'studio', file: 'shot-studio.jpg', w: 1456, h: 955, icon: 'spark',
-    t: L('创作工作台', 'Creator studio', 'クリエイタースタジオ'),
-    d: L('上传 → 内容 → 标签 → 发布，四步走完。边传边填，刷新也不丢草稿。', 'Upload → Content → Tags → Publish. Fill it in while it uploads; drafts survive a refresh.', 'アップロード → 内容 → タグ → 公開。アップロード中に入力でき、再読み込みしても下書きは残ります。') },
-  { id: 'search', file: 'shot-search.jpg', w: 1456, h: 1231, icon: 'search',
-    t: L('高级搜索', 'Advanced search', '詳細検索'),
-    d: L('多个标签（全部 / 任一 / 排除）、作者、日期、时长一起筛，实时预览。', 'Combine tags (all / any / exclude), authors, dates and length, with a live preview.', 'タグ（すべて / いずれか / 除外）、作者、日付、長さを組み合わせ、その場でプレビュー。') },
-  { id: 'preview', file: 'shot-cardpreview.jpg', w: 1456, h: 735, icon: 'eye',
-    t: L('卡片预览', 'Card preview', 'カードプレビュー'),
-    d: L('点卡片上的「⋯」直接预览封面、统计和标签，不用离开列表。', 'The “⋯” on any card previews the cover, stats and tags without leaving the list.', 'カードの「⋯」でカバー・統計・タグを一覧のままプレビュー。') },
-  { id: 'subs', file: 'shot-subs.jpg', w: 1456, h: 955, icon: 'filter',
-    t: L('订阅筛选', 'Subscription filters', '購読フィルター'),
-    d: L('订阅页加上排序、分级、年月和标签筛选，切换不刷新。', 'Sort, rating, year / month and tag filters on Subscriptions, without reloading.', '購読ページで並べ替え・レーティング・年月・タグを絞り込み。再読み込みなし。') },
-];
 
 const MORE = [
   ['pages', L('经典翻页 / 无限滚动', 'Pager or infinite scroll', 'ページ送り / 無限スクロール'), L('跳到任意页，或改成无限滚动，选择会被记住。', 'Jump to any page, or switch to infinite scroll; it’s remembered.', '任意のページへ、または無限スクロールに。選択は記憶されます。')],
@@ -159,6 +145,8 @@ export function releasePage(latest, { repoUrl = '', baseUrl = '' } = {}) {
   const v = esc(latest.version);
   const abs = (f) => (baseUrl ? `${esc(baseUrl)}/${f}` : f);
   const check = `<span class="ck">${ico('check', 15, 2)}</span>`;
+  const demos = buildDemos({ L, esc, today: new Date(`${latest.date}T00:00:00Z`) });
+  const DL = demos.list;
 
   const scriptSteps = [
     step('1', L('装脚本管理器', 'Get a script manager', 'スクリプト管理を入れる'),
@@ -245,6 +233,7 @@ export function releasePage(latest, { repoUrl = '', baseUrl = '' } = {}) {
     --grid: rgba(255,255,255,.06); --glow: rgba(120,119,198,.26); --spot: rgba(255,255,255,.06);
     --ok: #45d483; --wait: #f5a524; --info: #52a8ff; --shadow: 0 0 0 1px rgba(255,255,255,.06), 0 24px 80px -24px rgba(0,0,0,.9);
     --cr: #8ab4f8; --cr-fg: #0b1a33; --ffb: #00ddff; --ffb-fg: #0a1a20; --hl: #52a8ff; --menu: #0f0f0f;
+    --iw-bg: #181818; --iw-hd: #202020; --iw-card: #242424; --iw-line: #333; --iw-tx: #e8e8e8; --iw-dim: #9b9b9b; --iw-ac: #1aae92; --iw-ac2: #4fd8bc; --iw-chip: #2e2e2e; --iw-bad: #ff6b6b;
   }
   :root[data-theme="light"] {
     --bg: #fff; --bg-1: #fafafa; --bg-2: #f2f2f2; --bg-3: #ebebeb; --line: #ebebeb; --line-2: #e0e0e0; --line-3: #c9c9c9;
@@ -252,6 +241,7 @@ export function releasePage(latest, { repoUrl = '', baseUrl = '' } = {}) {
     --grid: rgba(0,0,0,.055); --glow: rgba(120,119,198,.2); --spot: rgba(0,0,0,.035);
     --ok: #1a9e55; --wait: #b26b00; --info: #0068d6; --shadow: 0 0 0 1px rgba(0,0,0,.06), 0 24px 60px -28px rgba(0,0,0,.35);
     --cr: #1a73e8; --cr-fg: #fff; --ffb: #0061e0; --ffb-fg: #fff; --hl: #0068d6; --menu: #fff;
+    --iw-bg: #f3f3f3; --iw-hd: #eaeaea; --iw-card: #fff; --iw-line: #e0e0e0; --iw-tx: #1f1f1f; --iw-dim: #767676; --iw-ac: #17a88c; --iw-ac2: #0e8770; --iw-chip: #ebebeb; --iw-bad: #d93844;
   }
   @media (prefers-color-scheme: light) {
     :root:not([data-theme="dark"]) {
@@ -260,6 +250,7 @@ export function releasePage(latest, { repoUrl = '', baseUrl = '' } = {}) {
       --grid: rgba(0,0,0,.055); --glow: rgba(120,119,198,.2); --spot: rgba(0,0,0,.035);
       --ok: #1a9e55; --wait: #b26b00; --info: #0068d6; --shadow: 0 0 0 1px rgba(0,0,0,.06), 0 24px 60px -28px rgba(0,0,0,.35);
       --cr: #1a73e8; --cr-fg: #fff; --ffb: #0061e0; --ffb-fg: #fff; --hl: #0068d6; --menu: #fff;
+    --iw-bg: #f3f3f3; --iw-hd: #eaeaea; --iw-card: #fff; --iw-line: #e0e0e0; --iw-tx: #1f1f1f; --iw-dim: #767676; --iw-ac: #17a88c; --iw-ac2: #0e8770; --iw-chip: #ebebeb; --iw-bad: #d93844;
     }
   }
 
@@ -353,10 +344,12 @@ export function releasePage(latest, { repoUrl = '', baseUrl = '' } = {}) {
   .cta { margin-top: 34px; display: flex; gap: 12px; justify-content: center; flex-wrap: wrap; }
   .detect { margin: 16px auto 0; min-height: 22px; font-size: 13px; color: var(--fg-3); display: flex; gap: 8px; justify-content: center; align-items: center; }
 
-  /* ── showcase：宽屏左边功能列表 + 右边截图；窄屏截图上方一排标签 ── */
+  /* ── showcase：宽屏左边功能列表 + 右边可以点的演示窗口；窄屏窗口上方一排标签 ── */
   .showcase { margin-top: 64px; }
+  .sc-hint { display: flex; align-items: center; justify-content: center; gap: 8px; margin: 0 auto 22px; font-size: 13.5px; color: var(--fg-2); text-align: center; text-wrap: balance; }
+  .sc-hint svg { color: var(--hl); }
   .chips { display: none; }
-  .sc-grid { display: grid; grid-template-columns: 300px minmax(0, 1fr); gap: 28px; align-items: start; }
+  .sc-grid { display: grid; grid-template-columns: 280px minmax(0, 1fr); gap: 24px; align-items: start; }
   .feats { display: flex; flex-direction: column; gap: 6px; }
   .feat { position: relative; display: grid; grid-template-columns: auto 1fr; gap: 4px 12px; padding: 14px 16px; border: 1px solid transparent; border-radius: 12px; background: none; color: var(--fg-2); text-align: left; cursor: pointer; overflow: hidden; transition: background .2s, border-color .2s, color .2s; }
   .feat .fi { grid-row: span 2; width: 32px; height: 32px; display: grid; place-items: center; border-radius: 9px; border: 1px solid var(--line-2); background: var(--bg-1); color: var(--fg-2); transition: color .2s, border-color .2s; }
@@ -366,20 +359,11 @@ export function releasePage(latest, { repoUrl = '', baseUrl = '' } = {}) {
   .feat[aria-selected="true"] { background: var(--bg-1); border-color: var(--line-2); }
   .feat[aria-selected="true"] .fi { color: var(--fg); border-color: var(--line-3); }
   .feat[aria-selected="true"] .fd { color: var(--fg-2); }
-  .feat .fbar { position: absolute; left: 16px; right: 16px; bottom: 0; height: 2px; overflow: hidden; border-radius: 2px; }
-  .feat .fbar i { display: block; height: 100%; width: 0; background: var(--fg-3); }
-  .auto .feat[aria-selected="true"] .fbar i { animation: prog 6s linear forwards; }
-  @keyframes prog { from { width: 0; } to { width: 100%; } }
-  .stage { position: relative; border-radius: 16px; padding: 7px; background: linear-gradient(180deg, var(--line-2), var(--line) 40%, transparent); box-shadow: var(--shadow); }
-  .frames { position: relative; border-radius: 10px; overflow: hidden; background: #1a1a1a; aspect-ratio: 1456 / 955; }
-  .frame { position: absolute; inset: 0; opacity: 0; transition: opacity .45s var(--ease), transform .6s var(--ease); transform: scale(1.012); }
-  .frame.on { opacity: 1; transform: none; }
-  .frame:not(.on) { pointer-events: none; }
-  .frame a { display: block; height: 100%; cursor: zoom-in; }
-  .frame img { width: 100%; height: 100%; object-fit: cover; object-position: top center; }
-  .sc-prog { display: none; }
-  .caption, .zoom-hint { display: none; }
-  html:not(.js) .frame:first-child { opacity: 1; }
+  .feat .fn { position: absolute; top: 14px; right: 14px; font: 11px/1 var(--mono); color: var(--fg-3); }
+  .stage { position: relative; min-width: 0; }
+  .caption { display: none; }
+  html:not(.js) .co, html:not(.js) .dw-ab, html:not(.js) .dw-re { display: none; }
+${demos.css}
 
   /* ── sections ── */
   section.block { padding: 112px 0 0; }
@@ -516,9 +500,6 @@ export function releasePage(latest, { repoUrl = '', baseUrl = '' } = {}) {
     .chips::-webkit-scrollbar { display: none; }
     .chip-t { flex: none; display: inline-flex; align-items: center; gap: 8px; height: 36px; padding: 0 14px; border-radius: 8px; border: 0; background: none; color: var(--fg-2); font-size: 14px; line-height: 1; cursor: pointer; white-space: nowrap; }
     .chip-t[aria-selected="true"] { color: var(--fg); background: var(--bg-2); box-shadow: 0 0 0 1px var(--line-2); }
-    .sc-prog { display: block; position: absolute; left: 18px; right: 18px; bottom: 2px; height: 2px; border-radius: 2px; overflow: hidden; }
-    .sc-prog i { display: block; height: 100%; width: 0; background: var(--fg-3); }
-    .auto .sc-prog.run i { animation: prog 6s linear forwards; }
     .caption { display: grid; margin: 16px auto 0; max-width: 40em; text-align: center; color: var(--fg-2); font-size: 15px; }
     .caption > div { grid-area: 1 / 1; visibility: hidden; }
     .caption > div.on { visibility: visible; }
@@ -528,8 +509,6 @@ export function releasePage(latest, { repoUrl = '', baseUrl = '' } = {}) {
     .methods { grid-template-columns: 1fr; }
     .faq-grid { grid-template-columns: 1fr; gap: 0; }
   }
-  /* 暂停放在媒体查询后面，保证优先级 */
-  .showcase.auto.paused .feat .fbar i, .showcase.auto.paused .sc-prog.run i { animation-play-state: paused; }
   @media (max-width: 640px) {
     :root { --hdr: 56px; }
     .wrap { padding: 0 16px; }
@@ -542,10 +521,14 @@ export function releasePage(latest, { repoUrl = '', baseUrl = '' } = {}) {
     .showcase { margin-top: 44px; }
     .chips { width: auto; max-width: none; margin: 0 -16px 14px; border-radius: 0; border-width: 1px 0; padding: 6px 12px; }
     .chip-t { height: 38px; }
-    .stage { padding: 5px; border-radius: 12px; }
-    .frames { border-radius: 8px; }
+    .stage { margin: 0 -8px; }
+    .dw { border-radius: 12px; }
+    .dw-body { height: 600px; }
+    .dw-dots, .dw-url > span { display: none; }
+    .dw-url b { margin-left: 0; }
+    .dw-bar { padding-left: 8px; gap: 6px; }
     .caption { font-size: 14px; text-align: left; }
-    .zoom-hint { display: block; margin: 8px 0 0; font: 12px/1.4 var(--mono); color: var(--fg-3); }
+    .sc-hint { font-size: 13px; margin-bottom: 16px; }
     section.block { padding-top: 80px; }
     .bento { grid-template-columns: 1fr; }
     .cell { padding: 18px 18px 20px; display: grid; grid-template-columns: auto 1fr; column-gap: 14px; }
@@ -625,24 +608,19 @@ export function releasePage(latest, { repoUrl = '', baseUrl = '' } = {}) {
       </div>
 
       <div class="showcase rv" id="features">
-        <div class="chips" role="tablist" aria-label="Screenshots">
-          ${SHOTS.map((s, i) => `<button class="chip-t" type="button" role="tab" id="ct-${s.id}" aria-controls="frm-${s.id}" aria-selected="${i === 0}" tabindex="${i === 0 ? 0 : -1}">${ico(s.icon, 15)}${s.t}</button>`).join('')}
+        <p class="sc-hint">${ico('spark', 15)}<span>${L('下面的窗口可以直接点，照插件的真实界面做的。右上角能切到「原版」对比。', 'The window below is live, built from the add-on’s real UI. Switch to “Original” at the top right to compare.', '下のウィンドウは操作できます（拡張機能の実際の画面を再現）。右上で「元のサイト」と比較できます。')}</span></p>
+        <div class="chips" role="tablist" aria-label="Features">
+          ${DL.map((s, i) => `<button class="chip-t" type="button" role="tab" id="ct-${s.id}" aria-controls="dw" aria-selected="${i === 0}" tabindex="${i === 0 ? 0 : -1}">${ico(s.icon, 15)}${s.t}</button>`).join('')}
         </div>
         <div class="sc-grid">
-          <div class="feats" role="tablist" aria-orientation="vertical" aria-label="Screenshots">
-            ${SHOTS.map((s, i) => `<button class="feat" type="button" role="tab" id="ft-${s.id}" aria-controls="frm-${s.id}" aria-selected="${i === 0}" tabindex="${i === 0 ? 0 : -1}"><span class="fi">${ico(s.icon, 16)}</span><b>${s.t}</b><span class="fd">${s.d}</span><span class="fbar"><i></i></span></button>`).join('')}
+          <div class="feats" role="tablist" aria-orientation="vertical" aria-label="Features">
+            ${DL.map((s, i) => `<button class="feat" type="button" role="tab" id="ft-${s.id}" aria-controls="dw" aria-selected="${i === 0}" tabindex="${i === 0 ? 0 : -1}"><span class="fi">${ico(s.icon, 16)}</span><b>${s.t}</b><span class="fd">${s.d}</span><span class="fn">0${i + 1}</span></button>`).join('')}
           </div>
-          <div class="stage">
-            <div class="frames">
-              ${SHOTS.map((s, i) => `<div class="frame${i === 0 ? ' on' : ''}" id="frm-${s.id}" role="tabpanel" aria-labelledby="ft-${s.id}"><a href="${s.file}" target="_blank" rel="noopener" tabindex="-1" aria-hidden="true"><img src="${s.file}" width="${s.w}" height="${s.h}" alt="" ${i === 0 ? 'fetchpriority="high"' : 'loading="lazy"'} decoding="async"></a></div>`).join('')}
-            </div>
-            <span class="sc-prog"><i></i></span>
-          </div>
+          <div class="stage">${demos.html}</div>
         </div>
         <div class="caption">
-          ${SHOTS.map((s, i) => `<div${i === 0 ? ' class="on"' : ''}><b>${s.t}</b> — ${s.d}</div>`).join('')}
+          ${DL.map((s, i) => `<div${i === 0 ? ' class="on"' : ''}><b>${s.t}</b> — ${s.d}</div>`).join('')}
         </div>
-        <p class="zoom-hint">${L('点截图看大图 · 左右滑动切换', 'Tap for full size · swipe to switch', 'タップで拡大・スワイプで切り替え')}</p>
       </div>
     </div>
   </section>
@@ -804,53 +782,31 @@ export function releasePage(latest, { repoUrl = '', baseUrl = '' } = {}) {
   const onScroll = () => hdr.classList.toggle('scrolled', scrollY > 8);
   addEventListener('scroll', onScroll, { passive: true }); onScroll();
 
-  // ── 截图展示。切换时只滚动标签条自己，不动页面 ──
-  const sc = $('.showcase'), chipsBar = $('.chips'), feats = $$('.feat'), chips = $$('.chip-t'), frames = $$('.frame'), caps = $$('.caption > div'), prog = $('.sc-prog');
-  const N = frames.length;
+  // ── 功能演示：左侧列表 / 窄屏标签条切换窗口里的演示。切换时只滚动标签条自己，不动页面 ──
+  ${demos.js}
+  const IDS = ${JSON.stringify(DL.map((x) => x.id))};
+  const chipsBar = $('.chips'), feats = $$('.feat'), chips = $$('.chip-t'), caps = $$('.caption > div');
+  const N = IDS.length;
   let cur = 0;
-  const replay = (el) => { el.style.animation = 'none'; void el.offsetWidth; el.style.animation = ''; };
   const show = (i, focusSet) => {
     cur = (i + N) % N;
     [feats, chips].forEach((set) => set.forEach((t, k) => { t.setAttribute('aria-selected', String(k === cur)); t.tabIndex = k === cur ? 0 : -1; }));
-    frames.forEach((f, k) => { f.classList.toggle('on', k === cur); f.setAttribute('aria-labelledby', (chipsBar.offsetParent ? 'ct-' : 'ft-') + f.id.slice(4)); });
     caps.forEach((c, k) => c.classList.toggle('on', k === cur));
     const chip = chips[cur];
     if (chipsBar.offsetParent && chipsBar.scrollWidth > chipsBar.clientWidth) {
       chipsBar.scrollTo({ left: chip.offsetLeft - (chipsBar.clientWidth - chip.offsetWidth) / 2, behavior: reduce ? 'auto' : 'smooth' });
     }
     if (focusSet) focusSet[cur].focus({ preventScroll: true });
-    replay($('i', prog)); replay($('.fbar i', feats[cur]));
+    DEMO.show(IDS[cur]);
   };
-  const stopAuto = () => sc.classList.remove('auto');
   [[feats, 'ArrowDown', 'ArrowUp'], [chips, 'ArrowRight', 'ArrowLeft']].forEach(([set, nextKey, prevKey]) => set.forEach((t, i) => {
-    t.addEventListener('click', () => { stopAuto(); show(i); });
+    t.addEventListener('click', () => show(i));
     t.addEventListener('keydown', (e) => {
       const to = e.key === nextKey ? cur + 1 : e.key === prevKey ? cur - 1 : e.key === 'Home' ? 0 : e.key === 'End' ? N - 1 : null;
-      if (to !== null) { e.preventDefault(); stopAuto(); show(to, set); }
+      if (to !== null) { e.preventDefault(); show(to, set); }
     });
   }));
-  // 自动轮播：进度条走完切下一张。鼠标停在上面、键盘焦点在里面、滚出视口时暂停；用户一操作就停
-  if (!reduce) {
-    prog.classList.add('run');
-    sc.classList.add('auto', 'paused');
-    sc.addEventListener('animationend', (e) => { if (e.animationName === 'prog' && sc.classList.contains('auto')) show(cur + 1); });
-    let inView = false, hover = false, focus = false;
-    const paint = () => sc.classList.toggle('paused', !inView || hover || focus);
-    new IntersectionObserver(([e]) => { inView = e.isIntersecting; paint(); }, { threshold: .35 }).observe($('.stage'));
-    sc.addEventListener('pointerenter', (e) => { if (e.pointerType === 'mouse') { hover = true; paint(); } });
-    sc.addEventListener('pointerleave', () => { hover = false; paint(); });
-    sc.addEventListener('focusin', () => { focus = true; paint(); });
-    sc.addEventListener('focusout', () => { focus = false; paint(); });
-  }
-  // 手机上左右滑动截图
-  let sx = null, sy = null;
-  const stage = $('.stage');
-  stage.addEventListener('touchstart', (e) => { sx = e.touches[0].clientX; sy = e.touches[0].clientY; }, { passive: true });
-  stage.addEventListener('touchend', (e) => {
-    if (sx === null) return;
-    const dx = e.changedTouches[0].clientX - sx, dy = e.changedTouches[0].clientY - sy; sx = null;
-    if (Math.abs(dx) > 40 && Math.abs(dx) > Math.abs(dy)) { stopAuto(); show(cur + (dx < 0 ? 1 : -1)); }
-  });
+  DEMO.el.addEventListener('demo:nav', (e) => show(IDS.indexOf(e.detail)));
 
   // ── 访客环境：决定推荐哪种装法、显示哪些步骤 ──
   const ua = navigator.userAgent, iPadOS = ua.includes('Macintosh') && navigator.maxTouchPoints > 1;
@@ -891,8 +847,10 @@ export function releasePage(latest, { repoUrl = '', baseUrl = '' } = {}) {
   pick(rec);
 
   // ── 手机底部安装栏：首屏按钮滚出后出现，到了安装区收起 ──
-  const dock = $('#dock'), dockBtn = $('#dock-main'), seen = { hero: true, install: false };
-  const paintDock = () => { const on = !seen.hero && !seen.install; dock.classList.toggle('show', on); dock.setAttribute('aria-hidden', String(!on)); dockBtn.tabIndex = on ? 0 : -1; };
+  // 演示窗口在屏幕上时也收起，免得挡住窗口底部
+  const dock = $('#dock'), dockBtn = $('#dock-main'), seen = { hero: true, install: false, demo: false };
+  new IntersectionObserver(([e]) => { seen.demo = e.isIntersecting; paintDock(); }, { threshold: .15 }).observe($('#dw'));
+  const paintDock = () => { const on = !seen.hero && !seen.install && !seen.demo; dock.classList.toggle('show', on); dock.setAttribute('aria-hidden', String(!on)); dockBtn.tabIndex = on ? 0 : -1; };
   new IntersectionObserver(([e]) => { seen.hero = e.isIntersecting; paintDock(); }).observe($('#hero-cta'));
   new IntersectionObserver(([e]) => { seen.install = e.isIntersecting; paintDock(); }, { rootMargin: '0px 0px -30% 0px' }).observe($('#install'));
 
