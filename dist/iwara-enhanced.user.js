@@ -775,7 +775,8 @@ const siteRules = (() => {
     const next = { main, keys, at: Date.now(), texts: null, bitrate: null, links: [], tagRule: null, mdHelp: null };
     for (const u of urls) {
       let src;
-      try { src = await (await fetch(u)).text(); } catch { continue; }
+      // 站点的静态代码不需要 Cookie；带 Cookie 的连接卡住时（2026-11-25 AI 站实测）不带的照样秒回。单个文件 15 秒没回就跳过，别让整次读取一直挂着
+      try { src = await (await fetch(u, { credentials: 'omit', signal: AbortSignal.timeout(15000) })).text(); } catch { continue; }
       if (!next.texts && src.includes('videoForm.creatorInformation.restrictions')) next.texts = parseTexts(src);
       if (src.includes('creatorInformation.bitrate.limits') && src.includes('"td"')) Object.assign(next, parseForm(src));
       if (!next.mdHelp && src.includes('markdownField__help')) next.mdHelp = parseMdHelp(src);
@@ -784,7 +785,7 @@ const siteRules = (() => {
     // 这次没读全（比如在编辑页、发布页代码块没加载）：缺的部分沿用上次缓存的
     if (data) for (const k of ['texts', 'bitrate', 'tagRule', 'mdHelp']) if (!next[k] && data[k]) next[k] = data[k];
     if (data && !next.links.length) next.links = data.links || [];
-    if (next.texts || next.bitrate) { data = next; store.set('siteRules', data); }
+    if (next.texts || next.bitrate || next.mdHelp) { data = next; store.set('siteRules', data); } // 只读到格式说明（不在发布页）也要留下
     return data;
   }
 
@@ -4583,9 +4584,16 @@ STYLE.push(`
 `);
 
 /** 站点官方的格式说明（发布页编辑框旁「格式」弹窗）：结构和示例与站点弹窗一致（siteRules.mdHelp），文案按界面语言取站点原文。 */
-function mdHelpDoc(L) {
+function mdHelpDoc(L, tried) {
   const tree = siteRules.mdHelp();
-  if (!tree) return h('div.md-help', h('p.note', icon('warn', 14), h('span', L.formatFail)));
+  if (!tree) {
+    // 格式说明是从站点自己的代码里读出来、按站点缓存的（主站和 AI 站的 localStorage 不互通）。原来只有打开创作工作台才会去读，
+    // 没开过工作台的站点上这里永远是「没读到」：现在就读一次（当前页面带编辑框，站点的格式说明代码已经加载），读完换掉这一块
+    if (tried) return h('div.md-help', h('p.note', icon('warn', 14), h('span', L.formatFail)));
+    const box = h('div.md-help', h('p.note', h('span.spin', { style: { width: '14px', height: '14px' } }), h('span', L.formatLoading)));
+    Promise.race([siteRules.load(), sleep(20000)]).catch(() => {}).then(() => { if (box.isConnected) box.replaceWith(mdHelpDoc(L, true)); });
+    return box;
+  }
   const dark = ui.root.querySelector('.app') && ui.root.querySelector('.app').dataset.theme === 'dark';
   const txtOf = (id) => siteRules.text(id) || id.split('.').pop();
   const ICON = { profile: 'user', video: 'film', image: 'picture', forum: 'chat', playlist: 'list', rule: 'shield', page: 'file' };
@@ -4637,7 +4645,7 @@ defineStrings({
   hpFlow3: '把常用的标题格式、简介、标签、分级存成模板，下次右上角「模板」一键套用，只需要填几个空。',
   hpLink: '链接', hpLinkTxt: '打 [文字](网址) 时，打完右括号就变成链接；裸网址后面接一个空格就变成链接。贴进来的 Iwara 站内链接（视频、图片、用户、播放列表、论坛帖）会自动换成作品名。按住 ⌘ / Ctrl 点链接可以打开。',
   hpMention: '提及', hpMentionTxt: '打 @ 加用户名会弹出用户列表，↑↓ 选择、回车确认。提及会显示成蓝色，按住 ⌘ / Ctrl 点它可以打开对方主页。',
-  hpFormat: '格式', hpFormatFail: '这次没能从站点读到官方的格式说明。可以在原版发布页编辑框旁点「格式」查看。',
+  hpFormat: '格式', hpFormatLoading: '正在从站点读取官方的格式说明…', hpFormatFail: '这次没能从站点读到官方的格式说明。可以在原版发布页编辑框旁点「格式」查看。',
   hpKeysTxt: '这些按键在发布页里随时可用。弹窗、菜单开着或者输入法正在选词时不响应。还不能进下一步时（比如填空没填完、发布条件没满足），按钮会抖一下并提示卡在哪。',
   hpKey1: '下一步（没在输入时）', hpKey2: '上一步（没在输入时）', hpKey3: '下一步 / 发布（输入时也能用）', hpKey4: '上一步（输入时也能用）', hpKey5: '跳到下一个填空', hpKey6: '这一格填完', hpKey7: '空填空里：退出；填空后面：整个删掉', hpKey8: '关闭弹窗、菜单', hpKey9: '提及用户',
   hpPrev: '上一页', hpNext: '下一页', hpClose: '关闭',
@@ -4649,7 +4657,7 @@ defineStrings({
   hpFlow3: 'Save your usual title pattern, description, tags and rating as a template, then apply it from “Templates” and just fill in the blanks.',
   hpLink: 'Links', hpLinkTxt: 'Typing [text](url) turns into a link as soon as you close the parenthesis; a bare URL becomes a link once you type a space after it. Iwara links (videos, images, users, playlists, forum threads) are replaced with their titles. ⌘/Ctrl-click to open.',
   hpMention: 'Mentions', hpMentionTxt: 'Type @ and a name to pick a user — ↑↓ to choose, Enter to confirm. Mentions turn blue; ⌘/Ctrl-click opens their profile.',
-  hpFormat: 'Formatting', hpFormatFail: 'Couldn’t read the site’s formatting guide this time. Open the original upload page and click “Formatting” next to the editor.',
+  hpFormat: 'Formatting', hpFormatLoading: 'Reading the site’s formatting guide…', hpFormatFail: 'Couldn’t read the site’s formatting guide this time. Open the original upload page and click “Formatting” next to the editor.',
   hpKeysTxt: 'These keys work anywhere on the publish page, except while a dialog or menu is open or an input method is composing. If you can’t move on yet, the button shakes and tells you what’s missing.',
   hpKey1: 'Next step (when not typing)', hpKey2: 'Previous step (when not typing)', hpKey3: 'Next / publish (works while typing)', hpKey4: 'Previous step (works while typing)', hpKey5: 'Next blank', hpKey6: 'Done with this blank', hpKey7: 'Leave an empty blank; delete a blank right before the cursor', hpKey8: 'Close dialogs and menus', hpKey9: 'Mention a user',
   hpPrev: 'Previous', hpNext: 'Next', hpClose: 'Close',
@@ -4661,7 +4669,7 @@ defineStrings({
   hpFlow3: 'よく使うタイトル形式・説明・タグ・レーティングをテンプレートとして保存しておくと、次回は右上の「テンプレート」からワンクリックで適用でき、空欄を埋めるだけで済みます。',
   hpLink: 'リンク', hpLinkTxt: '[テキスト](URL) と入力して右カッコを閉じると、リンクになります。URLだけを貼り付けた場合は、後ろにスペースを入れるとリンクになります。貼り付けたIwara内のリンク（動画・画像・ユーザー・プレイリスト・フォーラム投稿）は、作品名などに自動で置き換わります。⌘ / Ctrl を押しながらクリックすると開けます。',
   hpMention: 'メンション', hpMentionTxt: '@ に続けてユーザー名を入力すると、ユーザー一覧が表示されます。↑↓で選んでEnterで確定します。メンションは青く表示され、⌘ / Ctrl を押しながらクリックすると相手のプロフィールを開けます。',
-  hpFormat: '書式', hpFormatFail: '今回はサイトの公式な書式の説明を読み込めませんでした。元の投稿ページのエディタ横にある「書式」から確認できます。',
+  hpFormat: '書式', hpFormatLoading: 'サイトの公式な書式の説明を読み込んでいます…', hpFormatFail: '今回はサイトの公式な書式の説明を読み込めませんでした。元の投稿ページのエディタ横にある「書式」から確認できます。',
   hpKeysTxt: 'これらのキーは投稿ページでいつでも使えます。ダイアログやメニューが開いているときや、日本語入力（IME）で変換中のときは反応しません。まだ次へ進めない場合（空欄が未入力、投稿の条件が未達など）は、ボタンが揺れて原因を表示します。',
   hpKey1: '次のステップ（入力中以外）', hpKey2: '前のステップ（入力中以外）', hpKey3: '次のステップ / 投稿（入力中も有効）', hpKey4: '前のステップ（入力中も有効）', hpKey5: '次の空欄へ', hpKey6: 'この空欄を完了', hpKey7: '空の空欄では抜ける。空欄の直後なら丸ごと削除', hpKey8: 'ダイアログやメニューを閉じる', hpKey9: 'ユーザーをメンション',
   hpPrev: '前へ', hpNext: '次へ', hpClose: '閉じる',
@@ -4673,7 +4681,7 @@ function helpPages() {
     title: t('hpTitle'), slotNav: [t('hpNav1'), t('hpNav2'), t('hpNav3'), t('hpNav4')], flow: t('hpFlow'), slots: t('hpSlots'), editor: t('hpEditor'), keys: t('hpKeys'),
     flow1: t('hpFlow1'), flow2: t('hpFlow2'), flow3: t('hpFlow3'),
     link: t('hpLink'), linkTxt: t('hpLinkTxt'), mention: t('hpMention'), mentionTxt: t('hpMentionTxt'),
-    format: t('hpFormat'), formatFail: t('hpFormatFail'), keysTxt: t('hpKeysTxt'),
+    format: t('hpFormat'), formatLoading: t('hpFormatLoading'), formatFail: t('hpFormatFail'), keysTxt: t('hpKeysTxt'),
     keyList: [[['→'], t('hpKey1')], [['←'], t('hpKey2')], [['⌘', '↵'], t('hpKey3')], [['⌘', '⇧', '↵'], t('hpKey4')], [['Tab'], t('hpKey5')], [['↵'], t('hpKey6')], [['⌫'], t('hpKey7')], [['Esc'], t('hpKey8')], [['@'], t('hpKey9')]],
     prev: t('hpPrev'), next: t('hpNext'), page: (a, b) => `${a} / ${b}`, close: t('hpClose'),
   };

@@ -164,7 +164,8 @@ const siteRules = (() => {
     const next = { main, keys, at: Date.now(), texts: null, bitrate: null, links: [], tagRule: null, mdHelp: null };
     for (const u of urls) {
       let src;
-      try { src = await (await fetch(u)).text(); } catch { continue; }
+      // 站点的静态代码不需要 Cookie；带 Cookie 的连接卡住时（2026-11-25 AI 站实测）不带的照样秒回。单个文件 15 秒没回就跳过，别让整次读取一直挂着
+      try { src = await (await fetch(u, { credentials: 'omit', signal: AbortSignal.timeout(15000) })).text(); } catch { continue; }
       if (!next.texts && src.includes('videoForm.creatorInformation.restrictions')) next.texts = parseTexts(src);
       if (src.includes('creatorInformation.bitrate.limits') && src.includes('"td"')) Object.assign(next, parseForm(src));
       if (!next.mdHelp && src.includes('markdownField__help')) next.mdHelp = parseMdHelp(src);
@@ -173,7 +174,7 @@ const siteRules = (() => {
     // 这次没读全（比如在编辑页、发布页代码块没加载）：缺的部分沿用上次缓存的
     if (data) for (const k of ['texts', 'bitrate', 'tagRule', 'mdHelp']) if (!next[k] && data[k]) next[k] = data[k];
     if (data && !next.links.length) next.links = data.links || [];
-    if (next.texts || next.bitrate) { data = next; store.set('siteRules', data); }
+    if (next.texts || next.bitrate || next.mdHelp) { data = next; store.set('siteRules', data); } // 只读到格式说明（不在发布页）也要留下
     return data;
   }
 
