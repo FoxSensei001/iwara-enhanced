@@ -817,7 +817,8 @@ function wireField(f) {
   const sg = { open: false, box: null, rows: [], hi: -1 };
   const paintClear = () => f.root.classList.toggle('has-text', !!f.input.value);
   f.clear.addEventListener('mousedown', (e) => e.preventDefault());
-  f.clear.addEventListener('click', () => { f.input.value = ''; paintClear(); f.input.focus(); if (sg.open) render(); });
+  // 清空也发一次 input 事件：听输入框的地方（清空钮、联想、搜索页「精确匹配」变灰）都按「被清空了」处理
+  f.clear.addEventListener('click', () => { f.input.value = ''; f.input.dispatchEvent(new Event('input', { bubbles: true })); f.input.focus(); });
 
   function setHi(i) {
     sg.hi = i;
@@ -1015,6 +1016,7 @@ function buildHero() {
   const bar = h('div.iwe-sp-bar', h('div.iwe-sp-chips', CHIP_ORDER.map((f) => chips[f].wrap), clearAll), h('div.iwe-sp-meta', countEl, pagerSlot));
   const root = h('div.iwe-sp', form, tabBar, bar);
   scrollFade(tabBar); scrollFade(bar.firstChild); // 手机上这两排横向滑动：边缘渐隐提示还有内容
+  input.addEventListener('input', () => chips.exact.chip.classList.toggle('dim', !input.value.trim()));
 
   const field = wireField({
     root: form, input, clear, state: () => S, submit,
@@ -1022,10 +1024,15 @@ function buildHero() {
     pickRecent: (r) => { S = fromRecent(r); input.value = S.keyword; field.paintClear(); pop.close(true); commit({ record: true }); input.blur(); },
   });
 
-  function submit() {
+  // 关键词以输入框为准：框里删掉了、改了但没按回车，接着点筛选 / 切板块，搜的也是框里现在的字。
+  // （2026-11-25 以前关键词另存一份、只在回车时更新：清空输入框后改筛选，地址和顶栏里还是旧关键词）
+  function readInput() {
     absorb(S, input.value);
-    input.value = S.keyword;
+    if (input.value !== S.keyword) input.value = S.keyword;
     field.paintClear();
+  }
+  function submit() {
+    readInput();
     if (isEmpty(S)) { input.focus(); nudge(form); return; }
     pop.close(true);
     commit({ record: true });
@@ -1033,6 +1040,7 @@ function buildHero() {
   }
   /** 按当前状态跳转并重画（自己发起的跳转先记下地址签名，scan 回来时就不会再按地址重建一遍）。 */
   function commit(o = {}) {
+    readInput();
     paintAll();
     const sp = paramsOf(S);
     const ns = urlSig(sp);
@@ -1057,6 +1065,7 @@ function buildHero() {
     const wrap = h('div.iwe-sp-cw', chip);
     main.onclick = () => {
       if (f !== 'exact') { openChip(f, main); return; }
+      readInput();
       if (!S.keyword.trim()) { input.focus(); nudge(form); return; }
       S.exact = !S.exact;
       commit();
@@ -1182,7 +1191,9 @@ document.addEventListener('keydown', (e) => {
 
 const CSS = `
 /* ── 顶栏搜索框 ── */
-.header__search.iwe-hs{height:40px;align-items:stretch;border-radius:10px;background:var(--body);box-shadow:inset 0 0 0 1px rgba(128,128,128,.2);transition:box-shadow .18s}
+.header__search.iwe-hs{height:40px;align-items:stretch;border-radius:10px;background:var(--body);box-shadow:inset 0 0 0 1px rgba(128,128,128,.2);transition:box-shadow .18s,opacity .2s,transform .26s cubic-bezier(.22,1,.36,1),visibility 0s}
+/* 搜索页上收起（页面里有自己的搜索栏）：淡出后再 visibility:hidden，占位留着，顶栏两侧不跳 */
+.header__search.iwe-hs.iwe-hs-away{opacity:0;transform:translateY(-4px) scale(.98);visibility:hidden;pointer-events:none;transition:box-shadow .18s,opacity .2s,transform .26s cubic-bezier(.22,1,.36,1),visibility 0s .26s}
 .header__search.iwe-hs:hover{box-shadow:inset 0 0 0 1px rgba(128,128,128,.36)}
 .header__search.iwe-hs:focus-within,.header__search.iwe-hs.open,.header__search.iwe-hs.sg-open{box-shadow:inset 0 0 0 1.5px var(--primary),0 0 0 4px var(--primary-faded)}
 .header__search.iwe-hs input[name=query]{min-width:0;height:auto;padding:0 4px 0 10px;font:14px Roboto,Arial,sans-serif;color:var(--text)}
@@ -1425,16 +1436,25 @@ body.dark .iwe-sx-dates input{color-scheme:dark}
   .iwe-sp-meta{width:100%;justify-content:space-between;margin-left:0}
   .iwe-sp-pager .iwe-pager-seg span{display:none}
 }
-@media (prefers-reduced-motion:reduce){.iwe-pop,.iwe-pop-scrim,.iwe-sx-col,.iwe-sx-res,.iwe-sx-chip,.iwe-sp-cw,.iwe-sp-ink,.iwe-sp-clearall,.iwe-sx-badge,.iwe-sx-clear{transition:none!important;animation:none!important}}
+@media (prefers-reduced-motion:reduce){.header__search.iwe-hs,.iwe-pop,.iwe-pop-scrim,.iwe-sx-col,.iwe-sx-res,.iwe-sx-chip,.iwe-sp-cw,.iwe-sp-ink,.iwe-sp-clearall,.iwe-sx-badge,.iwe-sx-clear{transition:none!important;animation:none!important}}
 `;
 
 site.register('search', {
   css: CSS,
   scan(ctx) {
-    const form = document.querySelector('.header__search');
-    if (form) { if (form.__iweSync) form.__iweSync(ctx); else mountHeader(form, ctx); }
     if (ctx.path === '/search') mountHero(ctx);
     else hero = null; // 搜索页已经卸掉，节点随站点一起没了
+    const form = document.querySelector('.header__search');
+    if (form) {
+      if (form.__iweSync) form.__iweSync(ctx); else mountHeader(form, ctx);
+      // 搜索页自己有一整条搜索栏：顶栏那个收起来，免得两个框各写各的关键词（2026-11-25 用户提议）
+      const away = !!(hero && hero.root.isConnected);
+      if (form.classList.contains('iwe-hs-away') !== away) {
+        if (away && form.contains(document.activeElement)) document.activeElement.blur();
+        form.classList.toggle('iwe-hs-away', away);
+        form.inert = away;
+      }
+    }
     if (pop.cur && !pop.cur.anchor.isConnected) pop.close(true);
   },
 });
