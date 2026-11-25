@@ -211,13 +211,39 @@ const siteData = (() => {
 
 const site = (() => {
   const features = [];
-  let queued = false, lastPath = null, started = false;
+  let queued = false, lastPath = null, started = false, langReady = false;
   const pendingCss = [];
   // 脚本在 document-start 就运行（为了尽早旁听站点请求），那时还没有 <head>：样式攒到 start() 再插
   const addCss = (id, css) => { const el = h('style', { id }, css); started ? document.head.append(el) : pendingCss.push(el); };
   const isOff = (name) => (store.get('siteOff', []) || []).includes(name);
   const isDark = () => document.body.classList.contains('dark');
 
+  // 站点的界面语言 = localStorage.locale → 账号语言（账号没设就是英文）→ 英文；它的浏览器语言分支读错了属性名，走不到。
+  // localStorage.locale 由站点侧栏的语言选项写：手动切换时写，拿到账号语言后也会写回一次——所以缺它的只有「已登录、本机第一次打开」。
+  // 缺的时候先用上次记下的账号语言（按站点分开记）；连这个也没有，就等语言有着落再开始扫描（最多 3 秒）。
+  // 首次扫描之后这一场不再换语言：大部分界面只挂一次、不跟着重画，标签词库也是按当时的语言载入的，中途换只会中英混杂
+  function siteLang() {
+    const fixed = localStorage.getItem('locale');
+    const known = api.signedIn() && store.get('acctLocale');
+    if (!env.user) detectLang(fixed || known || null);
+    if (fixed || !api.signedIn()) return Promise.resolve();
+    let acct = null; // 这次 /user 拿到的账号语言；记下给下次用
+    api.call('/user') // 必须登录：令牌失效时直接失败，不发一次注定 401 的匿名请求
+      .then((me) => { if (me && me.user) { acct = me.user.locale || 'en'; store.set('acctLocale', acct); } }, () => {});
+    if (known) return Promise.resolve();
+    // 有着落 = 站点写进了 locale（它自己的换令牌发得早，常比我们先拿到账号）/ 我们拿到了账号语言 / 令牌被拒（站点按未登录显示英文）。
+    // /user 临时失败不算，接着等站点
+    return new Promise((res) => {
+      const t0 = Date.now();
+      const tick = () => {
+        const f = localStorage.getItem('locale');
+        if (!f && !acct && api.signedIn() && Date.now() - t0 < 3000) { setTimeout(tick, 100); return; }
+        if (!env.user) detectLang(f || (api.signedIn() ? acct : null));
+        res();
+      };
+      tick();
+    });
+  }
   function ctx() {
     return { path: location.pathname, search: new URLSearchParams(location.search), routeChanged: lastPath !== location.pathname + location.search, dark: isDark() };
   }
@@ -231,8 +257,8 @@ const site = (() => {
       try { f.scan(c); } catch (e) { console.error('[iwe]', f.name, e); }
     }
   }
-  // 启动前不扫描：页面可能还没有 body、样式还没插（start() 末尾会扫一次）
-  const schedule = () => { if (!started || queued) return; queued = true; requestAnimationFrame(run); };
+  // 启动前、界面语言定下来之前不扫描：页面可能还没有 body、样式还没插（见 siteLang）
+  const schedule = () => { if (!started || !langReady || queued) return; queued = true; requestAnimationFrame(run); };
 
   return {
     /**
@@ -265,12 +291,12 @@ body.dark [class^="iwe-"],body.dark [class*=" iwe-"]{--bg:#0a0a0a;--card:#111;--
       document.head.append(h('style', { id: 'iwe-scroll-fade' }, `[data-iwe-fade=r]{-webkit-mask-image:linear-gradient(90deg,#000 calc(100% - 32px),transparent);mask-image:linear-gradient(90deg,#000 calc(100% - 32px),transparent)}
 [data-iwe-fade=l]{-webkit-mask-image:linear-gradient(90deg,transparent,#000 32px);mask-image:linear-gradient(90deg,transparent,#000 32px)}
 [data-iwe-fade="l r"]{-webkit-mask-image:linear-gradient(90deg,transparent,#000 32px,#000 calc(100% - 32px),transparent);mask-image:linear-gradient(90deg,transparent,#000 32px,#000 calc(100% - 32px),transparent)}`));
-      // 站点没登录也要能用：界面语言先按站点自己的设置定
-      if (!env.user) detectLang(localStorage.getItem('locale') || navigator.language);
+      // 站点没登录也要能用：界面语言按站点自己的取法定（见 siteLang），定下来再扫描、再载入标签词库（词库按载入时的语言瘦身、缓存）
+      const ready = () => { langReady = true; tagDict.load().then(schedule); schedule(); };
+      siteLang().then(ready, ready);
       // 本地有刷新令牌不等于已登录（过期的站点不删）。站点自己换令牌常在脚本注入前就发出去了（实测第 136ms），上面的钩子听不到结果：
       // 这里自己换一次——成功就留着用（之后带登录的请求不用再换），被拒就记成失效并重扫（侧栏「订阅」等登录才有的东西撤掉）
       if (api.signedIn()) api.token().catch(() => { if (!api.signedIn()) schedule(); });
-      tagDict.load().then(schedule);
       new MutationObserver(schedule).observe(document.body, { childList: true, subtree: true, attributes: true, attributeFilter: ['class'] });
       addEventListener('popstate', schedule);
       schedule();

@@ -340,7 +340,7 @@ function fmtAgo(iso) {
   if (!isFinite(d)) return '';
   if (d >= 30 * 86400) return `${t0.getFullYear()}-${String(t0.getMonth() + 1).padStart(2, '0')}-${String(t0.getDate()).padStart(2, '0')}`;
   let rtf;
-  try { rtf = new Intl.RelativeTimeFormat(localStorage.getItem('locale') || navigator.language, { numeric: 'always' }); } catch { rtf = new Intl.RelativeTimeFormat('en'); }
+  try { rtf = new Intl.RelativeTimeFormat(uiLocale(), { numeric: 'always' }); } catch { rtf = new Intl.RelativeTimeFormat('en'); }
   for (const [u, sec] of [['day', 86400], ['hour', 3600], ['minute', 60]]) if (d >= sec) return rtf.format(-Math.floor(d / sec), u);
   return rtf.format(-Math.max(1, Math.floor(d)), 'second');
 }
