@@ -71,6 +71,12 @@
       };
       timer = setTimeout(() => finish(new Error('timeout')), FETCH_TIMEOUT);
       poll = setInterval(read, 250);
+      // 被拦下的 iframe 也会触发 load，但里面是浏览器的错误页（跨源，读不到 contentDocument）：立刻退回内置选项，
+      // 不干等 20 秒。iwara.ai 的响应头是 frame-ancestors https://*.iwara.tv，连自己嵌自己都被拦。
+      f.addEventListener('load', () => {
+        let doc = null; try { doc = f.contentDocument; } catch { /* 跨源 */ }
+        if (!doc || !String(doc.URL || '').startsWith(location.origin)) finish(new Error('blocked'));
+      });
       document.body.append(f);
     });
   }
