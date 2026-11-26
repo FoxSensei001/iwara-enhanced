@@ -156,7 +156,7 @@ function parseQuoteFromParagraph(p) {
 // 点了没反应；楼层又按页分（每页 limit 条，楼号 replyNum 从 0 起），目标常常根本不在当前页。以前我们的引用条用
 // `.comment` 当选择器（论坛帖子根本不是 .comment）并且把楼号当成本页第几条，所以也是坏的。
 // 修法：给每条帖子补上 id；楼号 → 页码 = floor(楼号 / limit)，不在当前页就先翻页再滚过去；带 #post-N 的地址打开时同样处理。
-const THREAD_PATH = /^\/forum\/([^/]+)\/([^/]+)\/?$/;
+const THREAD_PATH = /^\/forum\/([^/]+)\/([^/]+)(?:\/[^/]+)?\/?$/; // 末尾可带标题 slug
 let threadMeta = null; // { key: '<板块>/<主题 id>', limit }
 siteData.onApi((url, json) => {
   try {

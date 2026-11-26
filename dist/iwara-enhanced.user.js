@@ -7027,6 +7027,7 @@ function matchesPage(u) {
     return true;
   }
   else if ((m = path.match(/^\/forum\/([^/]+)$/))) { if (u.pathname !== '/forum/' + m[1]) return false; }
+  else if ((m = path.match(/^\/forum\/([^/]+)\/([^/]+)(?:\/[^/]+)?$/))) { if (u.pathname !== '/forum/' + m[1] + '/' + m[2]) return false; } // 主题页地址末尾可能还有标题 slug，接口里没有
   else if ((m = path.match(/^\/dashboard\/(donations|transactions)$/))) { if (u.pathname !== '/user/' + m[1]) return false; }
   else if ((m = path.match(/^\/profile\/([^/]+)\/(videos|images|posts)$/))) {
     if (u.pathname !== '/' + m[2] || !ap.has('user')) return false;
@@ -7451,7 +7452,7 @@ const LIST_ROUTE = new RegExp([
   '^/(videos|images|search|subscriptions)/?$',
   '^/subscriptions/[^/]+/?$',            // 订阅（按类型分的）
   '^/forum/[^/]+/?$',                    // 论坛板块（主题列表）
-  '^/forum/[^/]+/[^/]+/?$',              // 论坛主题里的帖子（?page=N 驱动；站点用同一个 useFilters）
+  '^/forum/[^/]+/[^/]+(/[^/]+)?/?$',     // 论坛主题里的帖子（?page=N 驱动；站点用同一个 useFilters）。地址可带末尾的标题 slug：/forum/<板块>/<id>/<slug>
   '^/favorites/[^/]+/?$',                // 最爱
   '^/profile/[^/]+/(videos|images|posts)/?$',
   '^/dashboard/(donations|transactions)/?$',
@@ -8304,7 +8305,7 @@ function parseQuoteFromParagraph(p) {
 // 点了没反应；楼层又按页分（每页 limit 条，楼号 replyNum 从 0 起），目标常常根本不在当前页。以前我们的引用条用
 // `.comment` 当选择器（论坛帖子根本不是 .comment）并且把楼号当成本页第几条，所以也是坏的。
 // 修法：给每条帖子补上 id；楼号 → 页码 = floor(楼号 / limit)，不在当前页就先翻页再滚过去；带 #post-N 的地址打开时同样处理。
-const THREAD_PATH = /^\/forum\/([^/]+)\/([^/]+)\/?$/;
+const THREAD_PATH = /^\/forum\/([^/]+)\/([^/]+)(?:\/[^/]+)?\/?$/; // 末尾可带标题 slug
 let threadMeta = null; // { key: '<板块>/<主题 id>', limit }
 siteData.onApi((url, json) => {
   try {

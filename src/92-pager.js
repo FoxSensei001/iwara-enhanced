@@ -106,6 +106,7 @@ function matchesPage(u) {
     return true;
   }
   else if ((m = path.match(/^\/forum\/([^/]+)$/))) { if (u.pathname !== '/forum/' + m[1]) return false; }
+  else if ((m = path.match(/^\/forum\/([^/]+)\/([^/]+)(?:\/[^/]+)?$/))) { if (u.pathname !== '/forum/' + m[1] + '/' + m[2]) return false; } // 主题页地址末尾可能还有标题 slug，接口里没有
   else if ((m = path.match(/^\/dashboard\/(donations|transactions)$/))) { if (u.pathname !== '/user/' + m[1]) return false; }
   else if ((m = path.match(/^\/profile\/([^/]+)\/(videos|images|posts)$/))) {
     if (u.pathname !== '/' + m[2] || !ap.has('user')) return false;
@@ -530,7 +531,7 @@ const LIST_ROUTE = new RegExp([
   '^/(videos|images|search|subscriptions)/?$',
   '^/subscriptions/[^/]+/?$',            // 订阅（按类型分的）
   '^/forum/[^/]+/?$',                    // 论坛板块（主题列表）
-  '^/forum/[^/]+/[^/]+/?$',              // 论坛主题里的帖子（?page=N 驱动；站点用同一个 useFilters）
+  '^/forum/[^/]+/[^/]+(/[^/]+)?/?$',     // 论坛主题里的帖子（?page=N 驱动；站点用同一个 useFilters）。地址可带末尾的标题 slug：/forum/<板块>/<id>/<slug>
   '^/favorites/[^/]+/?$',                // 最爱
   '^/profile/[^/]+/(videos|images|posts)/?$',
   '^/dashboard/(donations|transactions)/?$',
