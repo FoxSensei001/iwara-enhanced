@@ -1,16 +1,16 @@
 {
   "schema": 1,
   "name": "Iwara Enhanced",
-  "version": "0.1.0",
-  "date": "2026-11-25",
+  "version": "0.1.1",
+  "date": "2026-11-26",
   "downloadPage": "https://foxsensei001.github.io/iwara-enhanced/",
   "userscript": {
     "install": "https://foxsensei001.github.io/iwara-enhanced/iwara-enhanced.user.js",
     "meta": "https://foxsensei001.github.io/iwara-enhanced/iwara-enhanced.meta.js"
   },
   "chromium": {
-    "zip": "https://foxsensei001.github.io/iwara-enhanced/iwara-enhanced-chromium-0.1.0.zip",
-    "sha256": "c39d27c1245ea4ee00dd39e2104e00b6d16d0ee7da3d4f948cbd606eb346a94e",
+    "zip": "https://foxsensei001.github.io/iwara-enhanced/iwara-enhanced-chromium-0.1.1.zip",
+    "sha256": "4bc98faba8e8f3e655c03c52ad6d4e608dff4f7bb9b102a055f27abdd4663a21",
     "minVersion": "111"
   },
   "firefox": {

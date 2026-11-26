@@ -3,7 +3,7 @@
 // @name:zh-CN   Iwara 增强
 // @name:ja      Iwara 拡張
 // @namespace    iwara-enhanced
-// @version      0.1.0
+// @version      0.1.1
 // @description  Makes the official Iwara site more convenient. Includes a creator studio: step-by-step publishing, live Markdown editor, localized tag picker, reusable templates, and a cleaner content manager.
 // @description:zh-CN  让 Iwara 官方网站用起来更顺手。目前包含创作工作台：分步发布、所见即所得的简介编辑、中文标签选择、可复用的模板，以及更清爽的内容管理页。
 // @description:ja  Iwara 公式サイトをもっと使いやすく。投稿を段階的に進められるクリエイタースタジオ、見たまま編集できる説明欄、日本語で探せるタグ選択、再利用できるテンプレート、すっきりしたコンテンツ管理などを追加します。
